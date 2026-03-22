@@ -1,20 +1,19 @@
 import mongoose from 'mongoose';
 const { Schema, model } = mongoose;
 
-const noticeSchema = new Schema({
+const boardSchema = new Schema({
   category: {
     type: String,
     required: true,
-    enum: ['performance', 'supplies', 'event', 'general'],
-    default: 'general'
+    enum: ['공지', '일반'],
+    default: '일반'
   },
   content: { type: String, required: true },
-  deadline: { type: Date, required: true },
+  deadline: { type: Date, required: false },
   dDayAlarm: { type: Number, default: 3 },
   authorId: { type: String, required: true },
-  authorRole: { type: String, required: true },
   authorName: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 });
 
-export default model('Notice', noticeSchema);
+export default model('Board', boardSchema);

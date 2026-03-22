@@ -15,7 +15,7 @@ const storage = diskStorage({
     destination: (req, file, cb) => cb(null, 'uploads/'),
     filename: (req, file, cb) => cb(null, Date.now() + extname(file.originalname))
 });
-const upload = multer({ storage: storage, limits: { fileSize: 10 * 1024 * 1024 } });
+const upload = multer({ storage: storage, limits: { fileSize: 1 * 1024 * 1024 * 1024 } }); // 1GiB
 
 // 카테고리별 자료 조회 (로그인한 사람만 볼 수 있게 설정)
 router.get('/', verifyToken, async (req, res) => {
@@ -40,9 +40,9 @@ router.post('/upload', verifyToken, upload.single('file'), /** @param {import('.
             originalName: req.file.originalname,
             filePath: req.file.path,
             size: req.file.size,
-            uploaderId: req.user.id, // 👈 미들웨어에서 넘어온 유저 ID
+            authorId: req.user.id,
             description: req.body.description,
-            category: req.body.category
+            preserve: req.body.preserve === true
         });
         await newFile.save();
         res.status(201).json({ message: "업로드 성공", fileId: newFile._id });
@@ -52,50 +52,40 @@ router.post('/upload', verifyToken, upload.single('file'), /** @param {import('.
 });
 
 // 필수 보존 토글 (반장이나 관리자만 가능하게 하려면 로직 추가 가능)
-router.patch('/:id/essential', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
+router.patch('/:id/preserve', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
     if (!req.user) return res.status(401).json({ error: "인증이 필요합니다." });
     if (!['반장', '관리자'].includes(req.user.role)) {
         return res.status(403).json({ error: "권한이 없습니다." });
     }
 
+    const { preserve } = req.body;
+
+    if (typeof preserve !== 'boolean') {
+        return res.status(400).json({ error: "preserve 필드는 boolean이어야 합니다." });
+    }
+
     try {
         const file = await File.findById(req.params.id);
 
         if (!file) return res.status(404).json({ error: "파일 없음" });
 
-        file.isEssential = !file.isEssential;
+        file.preserve = preserve;
         await file.save();
-        res.json({ message: "보존 설정 변경됨", isEssential: file.isEssential });
+        res.json({ message: "보존 설정 변경됨", preserve: file.preserve });
     } catch (error) {
         res.status(500).json({ error: "설정 변경 오류" });
-    }
-});
-
-// 반장 코멘트 추가
-router.patch('/:id/president-comment', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
-    if (!req.user) return res.status(401).json({ error: "인증이 필요합니다." });
-    if (req.user.role !== '반장') return res.status(403).json({ error: "반장만 가능합니다." });
-
-    try {
-        const file = await File.findById(req.params.id);
-        if (!file) return res.status(404).json({ error: "파일 없음" });
-        file.presidentComment = req.body.presidentComment;
-        await file.save();
-        res.json({ message: "반장 코멘트 추가됨" });
-    } catch (error) {
-        res.status(500).json({ error: "코멘트 추가 오류" });
     }
 });
 
 // 자료 삭제 (본인 또는 반장/관리자)
 router.delete('/:id', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
     if (!req.user) return res.status(401).json({ error: "인증이 필요합니다." });
-    
+
     try {
         const file = await File.findById(req.params.id);
         if (!file) return res.status(404).json({ error: "파일 없음" });
 
-        if (file.uploaderId !== req.user.id && !['반장', '관리자'].includes(req.user.role)) {
+        if (file.authorId !== req.user.id && !['반장', '관리자'].includes(req.user.role)) {
             return res.status(403).json({ error: "삭제 권한이 없습니다." });
         }
 

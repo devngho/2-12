@@ -4,26 +4,24 @@ import bcryptjs from 'bcryptjs';
 const { Router } = express;
 const { genSalt, hash } = bcryptjs;
 
-import Notice from '../models/Notice.js';
+import Board from '../models/Board.js';
 import User from '../models/User.js';
 import verifyToken from '../middleware/auth.js';
 
 const router = Router();
 
-// [기능 1] 공지사항 등록 (선생님, 반장, 부반장, 1인1역 전용)
 router.post('/', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
   const { category, content, deadline, dDayAlarm } = req.body;
   const parsedDeadline = new Date(deadline);
 
   if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
 
-  const allowedRoles = ['담임', '반장', '부반장', '관리자'];
-  if (!allowedRoles.includes(req.user.role)) {
-    return res.status(403).json({ error: '공지를 등록할 권한이 없습니다.' });
+  if (category === '공지' && !['관리자', '반장', '부반장'].includes(req.user.role)) {
+    return res.status(403).json({ error: '공지는 관리자, 반장, 부반장만 작성할 수 있습니다.' });
   }
 
   try {
-    const newNotice = new Notice({
+    const newBoard = new Board({
       category,
       content,
       deadline: parsedDeadline,
@@ -33,11 +31,11 @@ router.post('/', verifyToken, /** @param {import('../auth.js').AuthenticatedRequ
       authorName: req.user.name
     });
 
-    await newNotice.save();
-    res.status(201).json({ message: '공지가 등록되었습니다.', data: newNotice });
+    await newBoard.save();
+    res.status(201).json({ message: '글이 등록되었습니다.', data: newBoard });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: '공지 등록 오류' });
+    res.status(500).json({ error: '글 등록 오류' });
   }
 });
 
@@ -59,10 +57,10 @@ router.get('/', verifyToken, /** @param {import('../auth.js').AuthenticatedReque
       query.category = category;
     }
 
-    const notices = await Notice.find(query).sort({ createdAt: -1 });
-    res.status(200).json(notices);
+    const boards = await Board.find(query).sort({ createdAt: -1 });
+    res.status(200).json(boards);
   } catch (error) {
-    res.status(500).json({ error: '공지 조회 오류' });
+    res.status(500).json({ error: '글 조회 오류' });
   }
 });
 
@@ -70,15 +68,23 @@ router.get('/', verifyToken, /** @param {import('../auth.js').AuthenticatedReque
 router.get('/alerts', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
   if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
 
+  const { category } = req.query;
+
+  if (category && typeof category !== 'string') {
+    return res.status(400).json({ error: '카테고리 쿼리는 문자열이어야 합니다.' });
+  }
+
   try {
-    const notices = await Notice.find({ category: 'performance' }).sort({ deadline: 1 });
+    const boards = category ? await Board.find({ category }).sort({ deadline: 1 }) : await Board.find().sort({ deadline: 1 });
     const today = new Date();
 
-    const alerts = notices.filter((notice) => {
-      const diffTime = notice.deadline.getTime() - today.getTime();
+    const alerts = boards.filter((board) => {
+      if (!board.deadline) return false;
+
+      const diffTime = board.deadline.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      return diffDays <= notice.dDayAlarm && diffDays >= 0;
+      return diffDays <= board.dDayAlarm && diffDays >= 0;
     });
 
     res.status(200).json(alerts);
@@ -93,7 +99,7 @@ router.patch('/change-pw', verifyToken, /** @param {import('../auth.js').Authent
 
   if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
 
-  if (!['관리자','반장', '부반장'].includes(req.user.role)) {
+  if (!['관리자', '반장', '부반장'].includes(req.user.role)) {
     return res.status(403).json({ error: '비밀번호 수정 권한이 없습니다.' });
   }
 
