@@ -1,7 +1,12 @@
-import express, { json, urlencoded } from 'express';
-import { connect } from 'mongoose';
-import { schedule } from 'node-cron';
+import express from 'express';
+import mongoose from 'mongoose';
+import cron from 'node-cron';
 import { unlink } from 'fs';
+
+const { json, urlencoded } = express;
+const { connect } = mongoose;
+const { schedule } = cron;
+
 import File from './models/File.js';
 import authRoutes from './routes/authRoutes.js';
 import fileRoutes from './routes/fileRoutes.js';

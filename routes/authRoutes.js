@@ -1,7 +1,11 @@
-import { Router } from 'express';
-import { genSalt, hash, compare } from 'bcryptjs';
+import express from 'express';
+import bcryptjs from 'bcryptjs';
 import pkg from 'jsonwebtoken';
+
+const { Router } = express;
+const { genSalt, hash, compare } = bcryptjs;
 const { sign } = pkg;
+
 import User from '../models/User.js';
 const router = Router();
 

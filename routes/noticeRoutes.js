@@ -1,5 +1,9 @@
-import { Router } from 'express';
-import { genSalt, hash } from 'bcryptjs';
+import express from 'express';
+import bcryptjs from 'bcryptjs';
+
+const { Router } = express;
+const { genSalt, hash } = bcryptjs;
+
 import Notice from '../models/Notice.js';
 import User from '../models/User.js';
 import verifyToken from '../middleware/auth.js';

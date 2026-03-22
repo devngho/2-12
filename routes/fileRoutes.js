@@ -1,7 +1,11 @@
-import { Router } from 'express';
-import multer, { diskStorage } from 'multer';
+import express from 'express';
+import multer from 'multer';
 import { unlink } from 'fs';
 import { extname } from 'path';
+
+const { Router } = express;
+const { diskStorage } = multer;
+
 import File from '../models/File.js';
 import verifyToken from '../middleware/auth.js';
 
