@@ -55,7 +55,7 @@ export default function FloatingMenu() {
                 navigate(item.path);
                 setIsOpen(false);
               }}
-              className="w-36 py-2.5 px-4 rounded-full bg-black text-white hover:bg-white hover:text-black border-2 border-black hover:border-black font-bold shadow-lg transition-colors duration-75 text-[15px] flex items-center justify-center tracking-wide"
+              className="w-36 py-2.5 px-4 rounded-full bg-black text-white hover:bg-white hover:text-black border-2 border-black hover:border-black font-bold shadow-lg transition-colors duration-75 text-[15px] flex items-center justify-center tracking-wide cursor-pointer"
             >
               {item.name}
             </button>
@@ -66,7 +66,7 @@ export default function FloatingMenu() {
       {/* 플로팅 메인 버튼 (로고) */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-36 h-10 rounded-full bg-white border-2 border-black flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-transform z-10"
+        className="w-36 h-10 rounded-full bg-white border-2 border-black flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-transform z-10 cursor-pointer"
       >
         <img src={logo1} alt="Menu" className="w-12 h-12 object-contain" />
       </button>

@@ -3,7 +3,7 @@ import api from '../services/api';
 
 export default function Timetable() {
   const getTodayFormatted = () => new Date().toISOString().split('T')[0];
-  
+
   const [date] = useState(getTodayFormatted());
   const [timetable, setTimetable] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -50,19 +50,19 @@ export default function Timetable() {
         const data = response.data;
 
         const getRoom = (block, subject) => {
-            if (!subject) return '';
-            if (subject.includes('인공지능 기초')) return '컴퓨터실';
-            if (subject.includes('생명과학')) return '2-5';
-            if (subject.includes('물리')) {
-                if (block === '탐구A' || block === '탐구B') return '2-7';
-                if (block === '탐구C') return '2-4';
-            }
-            if (subject.includes('화학')) {
-                if (block === '탐구A') return '2-5';
-                if (block === '탐구B') return '2-3';
-                if (block === '탐구C') return '2-12';
-            }
-            return '';
+          if (!subject) return '';
+          if (subject.includes('인공지능 기초')) return '컴퓨터실';
+          if (subject.includes('생명과학')) return '2-5';
+          if (subject.includes('물리')) {
+            if (block === '탐구A' || block === '탐구B') return '2-7';
+            if (block === '탐구C') return '2-4';
+          }
+          if (subject.includes('화학')) {
+            if (block === '탐구A') return '2-5';
+            if (block === '탐구B') return '2-3';
+            if (block === '탐구C') return '2-12';
+          }
+          return '';
         };
 
         const newGrid = Array(7).fill(null).map(() => Array(5).fill({ name: '-' }));
@@ -79,7 +79,7 @@ export default function Timetable() {
             if (rowIdx >= 0 && rowIdx < 7 && colIdx >= 0 && colIdx < 5) {
               const baseName = item.name.replace(/\*/g, '').trim();
               const savedSubject = selections[baseName];
-              
+
               const finalSubject = savedSubject || item.subject;
               const finalRoom = finalSubject ? getRoom(baseName, finalSubject) : item.room;
 
@@ -113,55 +113,54 @@ export default function Timetable() {
     <div className="flex-grow w-full max-w-5xl mx-auto flex flex-col pt-12 items-center text-center space-y-12">
       <div>
         <h2 className="text-3xl font-bold mb-3">주간 시간표</h2>
-        <p className="opacity-60 text-base">현재 학기의 요일별(월~금) 시간표입니다. (북일고 2학년 12반 기준)</p>
+        <p className="opacity-60 text-base">2학년 12반의 1학기 요일별 시간표입니다.</p>
       </div>
 
       {showSetup ? (
         <div className="w-full max-w-md bg-base-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border-2 border-base-200/50 rounded-3xl p-8 flex flex-col items-center">
-            <h3 className="text-2xl font-bold mb-6">탐구 과목 설정</h3>
-            <p className="text-base-content/70 mb-8 text-sm">개인의 이동수업 시간표를 확인하기 위해<br/>각 블록별로 수강하는 과목을 선택해주세요.</p>
-            
-            <div className="w-full space-y-4">
-                {['탐구A', '탐구B', '탐구C'].map(block => (
-                    <div key={block} className="form-control w-full">
-                        <label className="label">
-                            <span className="label-text font-bold text-base">{block}</span>
-                        </label>
-                        <select 
-                            className="select select-bordered w-full"
-                            value={selections[block]}
-                            onChange={(e) => setSelections({...selections, [block]: e.target.value})}
-                        >
-                            <option value="" disabled>과목을 선택하세요</option>
-                            {subjectOptions.map(sub => (
-                                <option key={sub} value={sub}>{sub}</option>
-                            ))}
-                        </select>
-                    </div>
-                ))}
-            </div>
-            
-            <button 
-                className="btn btn-neutral w-full mt-8 rounded-xl font-bold text-lg" // Neutral dark button, consistent with minimal design
-                onClick={handleSaveSelections}
-                disabled={!selections['탐구A'] || !selections['탐구B'] || !selections['탐구C']}
-            >
-                설정 완료 및 시간표 보기
-            </button>
+          <h3 className="text-2xl font-bold mb-6">탐구 과목 설정</h3>
+          <p className="text-base-content/70 mb-8 text-sm">개인의 이동수업 시간표를 확인하기 위해<br />각 블록별로 수강하는 과목을 선택해주세요.</p>
+
+          <div className="w-full space-y-4">
+            {['탐구A', '탐구B', '탐구C'].map(block => (
+              <div key={block} className="form-control w-full">
+                <label className="label">
+                  <span className="label-text font-bold text-base">{block}</span>
+                </label>
+                <select
+                  className="select select-bordered w-full"
+                  value={selections[block]}
+                  onChange={(e) => setSelections({ ...selections, [block]: e.target.value })}
+                >
+                  <option value="" disabled>과목을 선택하세요</option>
+                  {subjectOptions.map(sub => (
+                    <option key={sub} value={sub}>{sub}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+
+          <button
+            className="btn btn-neutral w-full mt-8 rounded-xl font-bold text-lg" // Neutral dark button, consistent with minimal design
+            onClick={handleSaveSelections}
+            disabled={!selections['탐구A'] || !selections['탐구B'] || !selections['탐구C']}
+          >
+            설정 완료 및 시간표 보기
+          </button>
         </div>
       ) : (
         <div className="w-full px-4 flex justify-center pb-8 overflow-x-auto flex-col items-center space-y-6">
-          <button onClick={() => setShowSetup(true)} className="btn btn-sm btn-outline btn-neutral self-end mr-4 mb-2">과목 재설정</button>
           <div className="w-full max-w-4xl bg-base-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border-2 border-base-200/50 rounded-3xl overflow-hidden min-w-[600px] flex flex-col relative">
             <table className="table w-full text-center">
               <thead>
                 <tr className="bg-base-200 border-b-2 border-base-200/50">
-                  <th className="py-4 text-base font-bold text-base-content/80 w-16 border-r border-base-200/30">교시</th>
-                  <th className="py-4 text-base font-bold text-base-content/80 w-[16%]">월</th>
-                  <th className="py-4 text-base font-bold text-base-content/80 w-[16%]">화</th>
-                  <th className="py-4 text-base font-bold text-base-content/80 w-[16%]">수</th>
-                  <th className="py-4 text-base font-bold text-base-content/80 w-[16%]">목</th>
-                  <th className="py-4 text-base font-bold text-base-content/80 w-[16%]">금</th>
+                  <th className="py-4 text-base font-bold text-base-content/80 border-r border-base-200/30 w-[10%]">교시</th>
+                  <th className="py-4 text-base font-bold text-base-content/80 w-[18%]">월</th>
+                  <th className="py-4 text-base font-bold text-base-content/80 w-[18%]">화</th>
+                  <th className="py-4 text-base font-bold text-base-content/80 w-[18%]">수</th>
+                  <th className="py-4 text-base font-bold text-base-content/80 w-[18%]">목</th>
+                  <th className="py-4 text-base font-bold text-base-content/80 w-[18%]">금</th>
                 </tr>
               </thead>
               <tbody>
@@ -208,6 +207,7 @@ export default function Timetable() {
               </tbody>
             </table>
           </div>
+          <button onClick={() => setShowSetup(true)} className="btn btn-sm btn-outline btn-neutral mt-2">과목 재설정</button>
         </div>
       )}
     </div>

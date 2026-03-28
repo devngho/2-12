@@ -37,7 +37,7 @@ function getDonutSlicePath(cx, cy, ir, or, startAngle, endAngle) {
 }
 
 export default function Home() {
-  const [isHovered, setIsHovered] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [rotation, setRotation] = useState(0);
   const navigate = useNavigate();
 
@@ -73,13 +73,12 @@ export default function Home() {
       <div
         className="relative z-10 flex items-center justify-center rounded-full"
         style={{ width: `${SVG_SIZE}px`, height: `${SVG_SIZE}px`, maxWidth: '100vw' }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         {/* 중앙 로고 */}
         <div
-          className="z-30 transition-transform duration-200 ease-out relative"
-          style={{ transform: isHovered ? 'scale(1.15)' : 'scale(1)' }}
+          className="z-30 transition-transform duration-200 ease-out relative cursor-pointer"
+          style={{ transform: isOpen ? 'scale(1.15)' : 'scale(1)' }}
+          onClick={() => setIsOpen(!isOpen)}
         >
           {/* 스케일 다운: w-80 -> w-64 변경하여 여백 확보 */}
           <img src={logo2} alt="Bugil212 Logo" className="w-64 h-auto drop-shadow-sm pointer-events-none" />
@@ -87,11 +86,7 @@ export default function Home() {
 
         {/* SVG 방사형 부채꼴 메뉴 */}
         <div
-          className="absolute inset-0 z-20 transition-all duration-[3 00ms] ease-out pointer-events-none"
-          style={{
-            opacity: isHovered ? 1 : 0,
-            transform: isHovered ? 'scale(1)' : 'scale(0.95)'
-          }}
+          className="absolute inset-0 z-20 pointer-events-none"
         >
           <svg width="100%" height="100%" viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}>
             <g>
@@ -104,11 +99,20 @@ export default function Home() {
                 const textRadius = (innerRadius + outerRadius) / 2;
                 const textPos = polarToCartesian(cx, cy, textRadius, midAngle);
 
+                const ccwIndex = index === 0 ? 0 : menuItems.length - index;
+                const delay = ccwIndex * 40; // 40ms 간격으로 반시계 방향 순서
+
                 return (
                   <g
                     key={index}
-                    className={`group cursor-pointer ${isHovered ? 'pointer-events-auto' : 'pointer-events-none'}`}
+                    className={`group cursor-pointer ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
                     onClick={() => navigate(item.path)}
+                    style={{
+                      transformOrigin: `${cx}px ${cy}px`,
+                      transform: isOpen ? 'scale(1)' : 'scale(0.5)',
+                      opacity: isOpen ? 1 : 0,
+                      transition: `all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`
+                    }}
                   >
                     {/* 선의 두께를 사용하여 평행하고 일정한 틈을 만듦 */}
                     <path

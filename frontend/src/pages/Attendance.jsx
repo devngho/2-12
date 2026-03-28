@@ -45,7 +45,7 @@ export default function Attendance() {
     if (st === 'absent') return '불참';
     if (st === 'media') return '미디어';
     if (st === 'activity') return '교내활동';
-    return '미정';
+    return '출석';
   };
 
   return (
@@ -61,8 +61,8 @@ export default function Attendance() {
           <button
             onClick={() => handleStatusChange('absent')}
             className={`flex-1 max-w-[220px] aspect-square rounded-3xl border-4 transition-all duration-300 flex flex-col items-center justify-center gap-4 ${myStatus === 'absent'
-                ? 'border-red-500 bg-red-500 text-white scale-105 shadow-[0_10px_30px_rgba(239,68,68,0.3)]'
-                : 'border-red-200 bg-transparent text-red-500 hover:border-red-300 hover:bg-red-50'
+              ? 'border-red-500 bg-red-500 text-white scale-105 shadow-[0_10px_30px_rgba(239,68,68,0.3)]'
+              : 'border-red-200 bg-transparent text-red-500 hover:border-red-300 hover:bg-red-50'
               }`}
           >
             <svg className="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -73,8 +73,8 @@ export default function Attendance() {
           <button
             onClick={() => handleStatusChange('media')}
             className={`flex-1 max-w-[220px] aspect-square rounded-3xl border-4 transition-all duration-300 flex flex-col items-center justify-center gap-4 ${myStatus === 'media'
-                ? 'border-blue-500 bg-blue-500 text-white scale-105 shadow-[0_10px_30px_rgba(59,130,246,0.3)]'
-                : 'border-blue-200 bg-transparent text-blue-500 hover:border-blue-300 hover:bg-blue-50'
+              ? 'border-blue-500 bg-blue-500 text-white scale-105 shadow-[0_10px_30px_rgba(59,130,246,0.3)]'
+              : 'border-blue-200 bg-transparent text-blue-500 hover:border-blue-300 hover:bg-blue-50'
               }`}
           >
             <svg className="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
@@ -85,8 +85,8 @@ export default function Attendance() {
           <button
             onClick={() => handleStatusChange('activity')}
             className={`flex-1 max-w-[220px] aspect-square rounded-3xl border-4 transition-all duration-300 flex flex-col items-center justify-center gap-4 ${myStatus === 'activity'
-                ? 'border-green-500 bg-green-500 text-white scale-105 shadow-[0_10px_30px_rgba(34,197,94,0.3)]'
-                : 'border-green-200 bg-transparent text-green-500 hover:border-green-300 hover:bg-green-50'
+              ? 'border-green-500 bg-green-500 text-white scale-105 shadow-[0_10px_30px_rgba(34,197,94,0.3)]'
+              : 'border-green-200 bg-transparent text-green-500 hover:border-green-300 hover:bg-green-50'
               }`}
           >
             <svg className="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
