@@ -1,8 +1,13 @@
-import express, { json, urlencoded } from 'express';
-import { connect } from 'mongoose';
-import { schedule } from 'node-cron';
+import express from 'express';
+import mongoose from 'mongoose';
+import cron from 'node-cron';
 import { unlink } from 'fs';
 import cookieParser from 'cookie-parser';
+
+const { json, urlencoded } = express;
+const { connect } = mongoose;
+const { schedule } = cron;
+
 import File from './models/File.js';
 import authRoutes from './routes/authRoutes.js';
 import fileRoutes from './routes/fileRoutes.js';
@@ -35,14 +40,14 @@ schedule('0 0 * * *', async () => {
 
         const filesToDelete = await File.find({
             uploadDate: { $lte: sixMonthsAgo },
-            isEssential: false
+            preserve: false
         });
 
         for (const file of filesToDelete) {
             unlink(file.filePath, async (err) => {
                 if (err && err.code !== 'ENOENT') return;
                 await File.findByIdAndDelete(file._id);
-                console.log(`자동 삭제 완료: ${file.filename}`);
+                console.log(`자동 삭제 완료: ${file.fileName}`);
             });
         }
     } catch (error) {

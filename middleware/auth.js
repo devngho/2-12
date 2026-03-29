@@ -1,7 +1,7 @@
 import pkg from 'jsonwebtoken';
-const { verify } = pkg;
 import * as express from 'express';
 
+const { verify } = pkg;
 /**
  * 
  * @param {import('../auth.js').AuthenticatedRequest} req 
