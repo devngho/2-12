@@ -113,7 +113,7 @@ const ParticleSystem = ({ isOpen }) => {
       }
 
       // 글자로 뭉치는 입자 수 약간 감축 (480개) - 더 가볍고 미니멀해짐
-      targetCoords = coords.slice(0, 1000);
+      targetCoords = coords.slice(0, 1500);
       // X 좌표 기준으로 정렬 (왼쪽 입자는 'ㅎ', 오른쪽 입자는 'ㅇ'으로 가장 짧은 동선을 그림)
       targetCoords.sort((a, b) => a.x - b.x);
 
@@ -336,8 +336,8 @@ export default function Home() {
   const SVG_SIZE = 560;
   const cx = SVG_SIZE / 2;
   const cy = SVG_SIZE / 2;
-  const innerRadius = 150;
-  const outerRadius = 270;
+  const innerRadius = 130;
+  const outerRadius = 250;
   // 7개로 360도를 정확히 등분 (약 51.4도)
   const sliceAngle = 360 / menuItems.length;
 
@@ -382,8 +382,7 @@ export default function Home() {
                   return (
                     <g
                       key={index}
-                      className={`group cursor-pointer ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
-                      onClick={() => navigate(item.path)}
+                      className={isOpen ? 'pointer-events-auto' : 'pointer-events-none'}
                       style={{
                         transformOrigin: `${cx}px ${cy}px`,
                         transform: isOpen ? 'scale(1)' : 'scale(0.5)',
@@ -391,21 +390,27 @@ export default function Home() {
                         transition: `all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`
                       }}
                     >
-                      {/* 선의 두께를 사용하여 평행하고 일정한 틈을 만듦 */}
-                      <path
-                        d={pathD}
-                        className="fill-black transition-colors duration-200 group-hover:fill-white"
-                        style={{ stroke: '#ffffff', strokeWidth: '5px' }}
-                      />
-                      <text
-                        x={textPos.x}
-                        y={textPos.y}
-                        textAnchor="middle"
-                        dy="0.33em"
-                        className="fill-white font-semibold text-lg transition-colors duration-200 group-hover:fill-black select-none pointer-events-none"
+                      <g
+                        className="group cursor-pointer transition-transform duration-300 hover:scale-[1.04]"
+                        style={{ transformOrigin: `${cx}px ${cy}px` }}
+                        onClick={() => navigate(item.path)}
                       >
-                        {item.name}
-                      </text>
+                        {/* 선의 두께를 사용하여 평행하고 일정한 틈을 만듦 */}
+                        <path
+                          d={pathD}
+                          className="fill-[#f1f1f1] transition-colors duration-300 group-hover:fill-black"
+                          style={{ stroke: '#ffffff', strokeWidth: '5px' }}
+                        />
+                        <text
+                          x={textPos.x}
+                          y={textPos.y}
+                          textAnchor="middle"
+                          dy="0.33em"
+                          className="fill-gray-500 font-bold text-lg transition-colors duration-300 group-hover:fill-white select-none pointer-events-none"
+                        >
+                          {item.name}
+                        </text>
+                      </g>
                     </g>
                   );
                 })}
