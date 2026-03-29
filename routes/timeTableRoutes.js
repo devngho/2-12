@@ -10,6 +10,8 @@ const router = Router();
 /** @type {Record<string, any>} */
 const cache = {}
 
+
+//comment: NEIS API에서 아예 탐구 A, 탐구 B 이런식으로 불러오더라고.. 참고하세요
 const mappings = { // todo: find more concise way
     '인공지능 기초': '탐구A',
     '정치': '탐구B',
