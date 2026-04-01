@@ -94,6 +94,30 @@ const ParticleSystem = ({ isOpen }) => {
       oCtx.fillText('ㅎ', leftBoundary, visualCenterY);
       oCtx.fillText('ㅇ', rightBoundary, visualCenterY);
 
+      // const imgData = oCtx.getImageData(0, 0, width, height).data;
+      // const coords = [];
+      // const density = Math.max(2, Math.floor(width / 500)); // 테두리는 입자가 더 촘촘해야 예쁘므로 밀도 보정
+
+      // for (let y = density; y < height - density; y += density) {
+      //   for (let x = density; x < width - density; x += density) {
+      //     const idx = (y * width + x) * 4;
+
+      //     // 현재 픽셀이 불투명(글자 안)인지 확인
+      //     if (imgData[idx + 3] > 128) {
+      //       // 상하좌우 인접 픽셀 중 하나라도 투명(글자 밖)하다면 '테두리'로 판정
+      //       const up = ((y - density) * width + x) * 4;
+      //       const down = ((y + density) * width + x) * 4;
+      //       const left = (y * width + (x - density)) * 4;
+      //       const right = (y * width + (x + density)) * 4;
+
+      //       if (imgData[up + 3] < 128 || imgData[down + 3] < 128 ||
+      //         imgData[left + 3] < 128 || imgData[right + 3] < 128) {
+      //         coords.push({ x, y });
+      //       }
+      //     }
+      //   }
+      // }
+
       const imgData = oCtx.getImageData(0, 0, width, height).data;
       const coords = [];
       const density = Math.max(3, Math.floor(width / 350));
@@ -114,7 +138,7 @@ const ParticleSystem = ({ isOpen }) => {
       }
 
       // 글자로 뭉치는 입자 수 약간 감축 (480개) - 더 가볍고 미니멀해짐
-      targetCoords = coords.slice(0, 1500);
+      targetCoords = coords.slice(0, 2500);
       // X 좌표 기준으로 정렬 (왼쪽 입자는 'ㅎ', 오른쪽 입자는 'ㅇ'으로 가장 짧은 동선을 그림)
       targetCoords.sort((a, b) => a.x - b.x);
 
@@ -421,7 +445,7 @@ const ParticleSystem = ({ isOpen }) => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-screen h-screen z-0 pointer-events-none"
+      className="fixed inset-0 w-screen h-screen z-0 pointer-events-none blur-[0.8px]"
     />
   );
 };
@@ -476,7 +500,7 @@ export default function Home() {
             <img
               src={logo2}
               alt="Bugil212 Logo"
-              className={`w-64 h-auto drop-shadow-sm pointer-events-none transition-transform duration-500 
+              className={`select-none w-64 h-auto drop-shadow-sm pointer-events-none transition-transform duration-500 
                 ${!isOpen ? 'group-hover:scale-[1.07]' : ''}`}
             />
           </div>

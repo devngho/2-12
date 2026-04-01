@@ -95,14 +95,14 @@ export default function NumberPicker() {
   return (
     <div className="flex-grow w-full max-w-lg mx-auto flex flex-col pt-10 space-y-8 items-center text-center">
       <div className="w-full">
-        <h2 className="text-3xl font-bold mb-2">랜덤 번호 추첨</h2>
+        <h2 className="select-none text-3xl font-bold mb-2">랜덤 번호 추첨</h2>
       </div>
 
       <div className="relative w-40 h-28 rounded-2xl border-[6px] border-base-300 flex items-center justify-center overflow-hidden bg-white shadow-inner">
-        {isEmpty && <span className="absolute text-6xl font-black z-10 w-full h-full flex items-center justify-center bg-white">?</span>}
+        {isEmpty && <span className="select-none absolute text-6xl font-black z-10 w-full h-full flex items-center justify-center bg-white">?</span>}
 
-        <div className={`flex gap-3 ${isEmpty ? 'opacity-0' : 'opacity-100'}`} style={{ height: `${ITEM_HEIGHT}px` }}>
-          <SlotReel index={tensIndex} duration={2000} isResetting={isResetting} />
+        <div className={`select-none flex gap-3 ${isEmpty ? 'opacity-0' : 'opacity-100'}`} style={{ height: `${ITEM_HEIGHT}px` }}>
+          <SlotReel index={tensIndex} duration={3000} isResetting={isResetting} />
           <SlotReel index={unitsIndex} duration={3000} isResetting={isResetting} />
         </div>
       </div>
@@ -127,7 +127,7 @@ export default function NumberPicker() {
 
       <div className="w-full card bg-base-100 shadow border border-base-200 mt-8">
         <div className="card-body p-4 text-left">
-          <h3 className="font-semibold mb-2">당첨된 번호 (총 {pickedNumbers.length}명)</h3>
+          <h3 className="select-none font-semibold mb-2">당첨된 번호 (총 {pickedNumbers.length}명)</h3>
           <div className="flex flex-wrap gap-2">
             {pickedNumbers.length === 0 ? <span className="opacity-50 text-sm">아직 없습니다.</span> : null}
             {pickedNumbers.map(num => (

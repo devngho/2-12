@@ -118,7 +118,7 @@ export default function Calendar() {
   return (
     <div className="flex-grow w-full max-w-4xl mx-auto flex flex-col pt-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">캘린더</h2>
+        <h2 className="select-none text-2xl font-bold">캘린더</h2>
         <div className="flex space-x-2">
           <button className="btn btn-sm btn-ghost" onClick={handlePrevMonth}>
             &lt;

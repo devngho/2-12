@@ -38,7 +38,7 @@ export default function FloatingMenu() {
 
   // 항목이 밑에서부터 쌓여서 올라가도록 배열 순서를 뒤집어 렌더링 준비
   return (
-    <div ref={menuRef} className="fixed bottom-8 right-8 z-[100] flex flex-col items-center xl:right-12 xl:bottom-12">
+    <div ref={menuRef} className="select-none fixed bottom-8 right-8 z-[100] flex flex-col items-center xl:right-12 xl:bottom-12">
       {/* 팝업 메뉴 리스트 */}
       <div className="flex flex-col-reverse mb-4 gap-3 items-center pointer-events-none">
         {validItems.reverse().map((item, idx) => (
