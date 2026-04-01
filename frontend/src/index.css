@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+@layer base {
+
+  html,
+  body {
+    font-family: "Pretendard", sans-serif;
+  }
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
@@ -14,16 +22,29 @@ body {
 }
 
 @keyframes orbit {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(-360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(-360deg);
+  }
 }
+
 @keyframes anti-orbit {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
+
 .animate-orbit {
   animation: orbit 180s linear infinite;
 }
+
 .animate-anti-orbit {
   animation: anti-orbit 180s linear infinite;
 }

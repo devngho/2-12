@@ -492,22 +492,27 @@ export default function Home() {
         >
           {/* 중앙 로고 */}
           <div
-            className="z-30 transition-transform duration-[800ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] relative cursor-pointer group"
-            style={{ transform: isOpen ? 'scale(1.15)' : 'scale(1)' }}
-            onClick={() => setIsOpen(!isOpen)}
+            className="z-20 transition-transform duration-[800ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] relative flex items-center justify-center pointer-events-none"
+            style={{ transform: isOpen ? 'scale(1.15)' : 'scale(0.8)' }}
           >
-            {/* 스케일 다운: w-80 -> w-64 변경하여 여백 확보 */}
-            <img
-              src={logo2}
-              alt="Bugil212 Logo"
-              className={`select-none w-64 h-auto drop-shadow-sm pointer-events-none transition-transform duration-500 
-                ${!isOpen ? 'group-hover:scale-[1.07]' : ''}`}
-            />
+            <div
+              className="relative rounded-full pointer-events-auto cursor-pointer group flex items-center justify-center"
+              style={{ width: '220px', height: '220px' }}
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              {/* 스케일 다운: w-80 -> w-64 변경하여 여백 확보 */}
+              <img
+                src={logo2}
+                alt="Bugil212 Logo"
+                className={`absolute z-10 select-none w-64 max-w-none h-auto drop-shadow-sm pointer-events-none transition-transform duration-500 
+                  ${!isOpen ? 'group-hover:scale-[1.07]' : ''}`}
+              />
+            </div>
           </div>
 
           {/* SVG 방사형 부채꼴 메뉴 */}
           <div
-            className="absolute inset-0 z-20 pointer-events-none"
+            className="absolute inset-0 z-10 pointer-events-none"
           >
             <svg width="100%" height="100%" viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}>
               <g>
