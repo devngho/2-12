@@ -49,6 +49,7 @@ router.post('/register', async (req, res) => {
         await newUser.save();
         res.status(201).json({ message: '회원가입 완료. 승인을 대기해주세요.' });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: '회원가입 오류' });
     }
 });
