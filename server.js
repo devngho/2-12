@@ -13,6 +13,7 @@ import authRoutes from './routes/authRoutes.js';
 import fileRoutes from './routes/fileRoutes.js';
 import boardRoutes from './routes/boardRoutes.js';
 import timeTableRoutes from './routes/timeTableRoutes.js';
+import menuRoutes from './routes/menuRoutes.js';
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/timetable', timeTableRoutes);
+app.use('/api/menu', menuRoutes);
 
 // MongoDB 연결 (class_website라는 이름의 DB 사용)
 connect(process.env.MONGODB_URL ?? "", { dbName: process.env.MONGODB_DB_NAME ?? "prod" })
