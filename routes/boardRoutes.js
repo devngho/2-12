@@ -8,7 +8,7 @@ const router = Router();
 
 router.post('/', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
   const { category, content, deadline, dDayAlarm } = req.body;
-  const parsedDeadline = new Date(deadline);
+  const parsedDeadline = deadline ? new Date(deadline) : undefined;
 
   if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
 

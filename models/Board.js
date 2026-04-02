@@ -4,7 +4,7 @@ const boardSchema = new Schema({
   category: {
     type: String,
     required: true,
-    enum: ['공지', '일반'],
+    enum: ['공지', '수행평가', '일반'],
     default: '일반'
   },
   content: { type: String, required: true },
