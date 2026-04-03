@@ -29,28 +29,28 @@ connect(process.env.MONGODB_URL ?? "", { dbName: process.env.MONGODB_DB_NAME ?? 
     .catch(err => console.error('❌ MongoDB 연결 실패:', err));
 
 // 6개월 자동 삭제 스케줄러 (매일 자정 실행)
-schedule('0 0 * * *', async () => {
-    console.log("🧹 자동 삭제 스케줄러 실행 중...");
-    try {
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+// schedule('0 0 * * *', async () => {
+//     console.log("🧹 자동 삭제 스케줄러 실행 중...");
+//     try {
+//         const sixMonthsAgo = new Date();
+//         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-        const filesToDelete = await File.find({
-            uploadDate: { $lte: sixMonthsAgo },
-            isEssential: false
-        });
+//         const filesToDelete = await File.find({
+//             uploadDate: { $lte: sixMonthsAgo },
+//             isEssential: false
+//         });
 
-        for (const file of filesToDelete) {
-            unlink(file.filePath, async (err) => {
-                if (err && err.code !== 'ENOENT') return;
-                await File.findByIdAndDelete(file._id);
-                console.log(`자동 삭제 완료: ${file.filename}`);
-            });
-        }
-    } catch (error) {
-        console.error("자동 삭제 오류:", error);
-    }
-});
+//         for (const file of filesToDelete) {
+//             unlink(file.filePath, async (err) => {
+//                 if (err && err.code !== 'ENOENT') return;
+//                 await File.findByIdAndDelete(file._id);
+//                 console.log(`자동 삭제 완료: ${file.filename}`);
+//             });
+//         }
+//     } catch (error) {
+//         console.error("자동 삭제 오류:", error);
+//     }
+// });
 
 const PORT = 3000;
 app.listen(PORT, () => {

@@ -1,16 +1,45 @@
 import { Router } from 'express';
 import { genSalt, hash } from 'bcryptjs';
+import multer, { diskStorage } from 'multer';
+import { extname } from 'path';
 import Board from '../models/Board.js';
 import User from '../models/User.js';
 import verifyToken from '../middleware/auth.js';
+import { redactAuthorId } from './commentsRoutes.js';
 
 const router = Router();
 
-router.post('/', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
-  const { category, content, deadline, dDayAlarm } = req.body;
+const storage = diskStorage({
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: (req, file, cb) => cb(null, Date.now() + extname(file.originalname))
+});
+const upload = multer({ storage: storage, limits: { fileSize: 1 * 1024 * 1024 * 1024 } }); // 1GiB
+
+router.post('/', verifyToken, upload.array('files'), /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
+  const { title, category, content, deadline, dDayAlarm } = req.body;
   const parsedDeadline = deadline ? new Date(deadline) : undefined;
+  const parsedDeadlineTime = parsedDeadline?.getTime();
+  const parsedDdayAlarm = typeof dDayAlarm === 'string' ? Number.parseInt(dDayAlarm, 10) : dDayAlarm;
+  const uploadedFiles = Array.isArray(req.files)
+    ? req.files.map((file) => ({
+      fileName: file.originalname,
+      filePath: file.path
+    }))
+    : [];
 
   if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
+
+  if (typeof title !== 'string' || typeof category !== 'string' || typeof content !== 'string') {
+    return res.status(400).json({ error: 'title, category, content는 문자열이어야 합니다.' });
+  }
+
+  if (parsedDeadlineTime !== undefined && Number.isNaN(parsedDeadlineTime)) {
+    return res.status(400).json({ error: 'deadline 형식이 올바르지 않습니다.' });
+  }
+
+  if (parsedDdayAlarm !== undefined && (typeof parsedDdayAlarm !== 'number' || Number.isNaN(parsedDdayAlarm))) {
+    return res.status(400).json({ error: 'dDayAlarm은 숫자여야 합니다.' });
+  }
 
   if (category === '공지' && !['관리자', '반장', '부반장'].includes(req.user.role)) {
     return res.status(403).json({ error: '공지는 관리자, 반장, 부반장만 작성할 수 있습니다.' });
@@ -18,13 +47,15 @@ router.post('/', verifyToken, /** @param {import('../auth.js').AuthenticatedRequ
 
   try {
     const newBoard = new Board({
+      title,
       category,
       content,
       deadline: parsedDeadline,
-      dDayAlarm,
+      dDayAlarm: parsedDdayAlarm,
       authorId: req.user.id,
       authorRole: req.user.role,
-      authorName: req.user.name
+      authorName: req.user.name,
+      files: uploadedFiles
     });
 
     await newBoard.save();
@@ -54,7 +85,19 @@ router.get('/', verifyToken, /** @param {import('../auth.js').AuthenticatedReque
     }
 
     const boards = await Board.find(query).sort({ createdAt: -1 });
-    res.status(200).json(boards);
+    res.status(200).json(boards.map((board) => ({
+      id: board._id,
+      title: board.title,
+      category: board.category,
+      content: board.content,
+      deadline: board.deadline,
+      dDayAlarm: board.dDayAlarm,
+      authorId: board.authorId,
+      authorName: board.authorName,
+      files: board.files,
+      createdAt: board.createdAt,
+      comments: redactAuthorId(board.comments)
+    })));
   } catch (error) {
     res.status(500).json({ error: '글 조회 오류' });
   }
