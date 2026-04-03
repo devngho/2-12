@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '../services/api';
 
 export default function Menu() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -12,14 +13,11 @@ export default function Menu() {
       setError(false);
       try {
         const formattedDate = date.replace(/-/g, ''); // 2023-11-01 -> 20231101
-        const API_KEY = import.meta.env.VITE_NEIS_API_KEY || ''; // .env 파일의 VITE_NEIS_API_KEY 사용
-        const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${API_KEY}&Type=json&ATPT_OFCDC_SC_CODE=N10&SD_SCHUL_CODE=8140270&MLSV_YMD=${formattedDate}`;
-        
-        const response = await fetch(url);
-        const data = await response.json();
+        const { data } = await api.get('/menu', { params: { date: formattedDate } });
 
-        if (data.mealServiceDietInfo) {
-          setMeals(data.mealServiceDietInfo[1].row);
+        if (data?.length > 0) {
+          console.log('급식 정보:', data);
+          setMeals(data);
         } else {
           setMeals([]); // 급식이 없는 날
         }
