@@ -1,88 +1,123 @@
-import express from 'express';
-const { Router } = express;
-
-import Comment from '../models/Comment.js';
+import { Router } from 'express';
+import Board from '../models/Board.js';
 import verifyToken from '../middleware/auth.js';
 
-const router = Router();
+const router = Router()
 
-// 댓글 작성
-router.post('/', verifyToken, /** @param {import('../auth').AuthenticatedRequest} req */ async (req, res) => {
+/**
+ * @param {Array<{ _id: any, nickname: string, content: string, commentedAt: Date, isDeleted: boolean }>} comments
+ * @returns {Array<{ id: any, nickname: string, content: string, commentedAt: Date }>}
+ */
+export function redactAuthorId(comments) {
+  return comments.filter(comment => !comment.isDeleted).map(comment => ({
+    id: comment._id,
+    nickname: comment.nickname,
+    content: comment.content,
+    commentedAt: comment.commentedAt
+  }));
+}
+
+router.post('/', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
+  const { boardId, nickname, content } = req.body;
+
   if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
 
-  const { boardId, content, nickname } = req.body;
-  if (!boardId || !content || !nickname) {
-    return res.status(400).json({ error: 'boardId, content, nickname은 필수입니다.' });
+  if (typeof boardId !== 'string' || typeof nickname !== 'string' || typeof content !== 'string') {
+    return res.status(400).json({ error: 'boardId, nickname, content는 문자열이어야 합니다.' });
   }
 
   try {
-    const comment = new Comment({
-      boardId,
-      content,
+    // find board
+    const board = await Board.findById(boardId);
+    if (!board) return res.status(404).json({ error: '게시글을 찾을 수 없습니다.' });
+
+    // add comment
+    board.comments.push({
       nickname,
+      content,
       authorId: req.user.id,
+      authorRole: req.user.role,
+      authorName: req.user.name
     });
-    await comment.save();
-    res.status(201).json({ message: '댓글이 등록되었습니다.', data: comment });
+    await board.save();
+
+    res.status(201).json({ message: '댓글이 등록되었습니다.', data: redactAuthorId(board.comments) });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: '댓글 등록 오류' });
   }
 });
 
-// 특정 게시글의 댓글 목록 조회
-router.get('/:boardId', verifyToken, async (req, res) => {
-  try {
-    const comments = await Comment.find({
-      boardId: req.params.boardId,
-      isDeleted: false
-    }).sort({ createdAt: 1 });
-    res.status(200).json(comments);
-  } catch (error) {
-    res.status(500).json({ error: '댓글 조회 오류' });
-  }
+router.get('/:boardId', async (req, res) => {
+    const { boardId } = req.params;
+
+    try {
+        const board = await Board.findById(boardId);
+        if (!board) return res.status(404).json({ error: '게시글을 찾을 수 없습니다.' });
+
+        res.status(200).json(redactAuthorId(board.comments));
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: '댓글 조회 오류' });
+    }
 });
 
-// 댓글 수정 (작성자만)
-router.patch('/:id', verifyToken, /** @param {import('../auth').AuthenticatedRequest} req */ async (req, res) => {
+router.delete('/:commentId', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
+  const { commentId } = req.params;
+
   if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
 
-  try {
-    const comment = await Comment.findById(req.params.id);
-    if (!comment) return res.status(404).json({ error: '댓글을 찾을 수 없습니다.' });
-    if (comment.authorId !== req.user.id) {
-      return res.status(403).json({ error: '수정 권한이 없습니다.' });
-    }
-
-    const { content } = req.body;
-    if (content) comment.content = content;
-    await comment.save();
-    res.json({ message: '댓글이 수정되었습니다.', data: comment });
-  } catch (error) {
-    res.status(500).json({ error: '댓글 수정 오류' });
+  if (typeof commentId !== 'string') {
+    return res.status(400).json({ error: 'commentId는 문자열이어야 합니다.' });
   }
-});
-
-// 댓글 삭제 (soft delete — 작성자 또는 반장/부반장/선생님/관리자)
-router.delete('/:id', verifyToken, /** @param {import('../auth').AuthenticatedRequest} req */ async (req, res) => {
-  if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
 
   try {
-    const comment = await Comment.findById(req.params.id);
+    const board = await Board.findOne({ 'comments._id': commentId });
+    if (!board) return res.status(404).json({ error: '댓글을 찾을 수 없습니다.' });
+
+    const comment = board.comments.id(commentId);
     if (!comment) return res.status(404).json({ error: '댓글을 찾을 수 없습니다.' });
 
-    const isAuthor = comment.authorId === req.user.id;
-    const isPrivileged = ['관리자', '반장', '부반장', '선생님'].includes(req.user.role);
-
-    if (!isAuthor && !isPrivileged) {
-      return res.status(403).json({ error: '삭제 권한이 없습니다.' });
+    if (comment?.userId !== req.user.id && req.user.role !== '관리자') {
+      return res.status(403).json({ error: '댓글 삭제 권한이 없습니다.' });
     }
-
     comment.isDeleted = true;
-    await comment.save();
+
+    await board.save();
     res.json({ message: '댓글이 삭제되었습니다.' });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: '댓글 삭제 오류' });
+  }
+});
+
+router.patch('/:commentId', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
+  const { commentId } = req.params;
+  const { content } = req.body;
+
+  if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
+
+  if (typeof commentId !== 'string' || typeof content !== 'string') {
+    return res.status(400).json({ error: 'commentId와 content는 문자열이어야 합니다.' });
+  }
+
+  try {
+    const board = await Board.findOne({ 'comments._id': commentId });
+    if (!board) return res.status(404).json({ error: '댓글을 찾을 수 없습니다.' });
+
+    const comment = board.comments.id(commentId);
+    if (!comment) return res.status(404).json({ error: '댓글을 찾을 수 없습니다.' });
+
+    if (comment?.userId !== req.user.id && req.user.role !== '관리자') {
+      return res.status(403).json({ error: '댓글 수정 권한이 없습니다.' });
+    }
+    comment.content = content;
+
+    await board.save();
+    res.json({ message: '댓글이 수정되었습니다.', data: redactAuthorId(board.comments) });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: '댓글 수정 오류' });
   }
 });
 

@@ -235,14 +235,14 @@ function CommentSection({ boardId }) {
       ) : (
         <div className="space-y-2 mb-3 max-h-60 overflow-y-auto">
           {comments.map(c => (
-            <div key={c._id} className="flex items-start gap-2 text-xs bg-base-200/50 p-2 rounded">
+            <div key={c.id} className="flex items-start gap-2 text-xs bg-base-200/50 p-2 rounded">
               <div className="flex-1">
                 <span className="font-bold">{c.nickname}</span>
-                <span className="text-base-content/40 ml-2">{new Date(c.createdAt).toLocaleDateString()}</span>
+                <span className="text-base-content/40 ml-2">{new Date(c.commentedAt).toLocaleDateString()}</span>
                 <p className="mt-0.5 whitespace-pre-wrap">{c.content}</p>
               </div>
               {user && (c.authorId === user.id || PRIVILEGED_ROLES.includes(user.role)) && (
-                <button className="btn btn-ghost btn-xs text-error shrink-0" onClick={() => handleDelete(c._id)}>삭제</button>
+                <button className="btn btn-ghost btn-xs text-error shrink-0" onClick={() => handleDelete(c.id)}>삭제</button>
               )}
             </div>
           ))}
@@ -300,7 +300,7 @@ function EditForm({ post, onCancel, onSuccess }) {
       if (isAssessment) {
         payload.deadline = deadline || null;
       }
-      await api.patch(`/boards/${post._id}`, payload);
+      await api.patch(`/boards/${post.id}`, payload);
       onSuccess();
     } catch (err) {
       alert(err.response?.data?.error || '수정에 실패했습니다.');
@@ -400,7 +400,7 @@ function BoardSection({ apiCategory, refreshKey }) {
   return (
     <div className="flex flex-col space-y-3">
       {posts.map(post => (
-        <div key={post._id} className="collapse collapse-arrow bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow">
+        <div key={post.id} className="collapse collapse-arrow bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow">
           <input type="checkbox" />
           {/* 닫힌 상태 — 제목만 표시 */}
           <div className="collapse-title pr-10">
@@ -422,7 +422,7 @@ function BoardSection({ apiCategory, refreshKey }) {
 
           {/* 펼친 상태 — 내용 전체 */}
           <div className="collapse-content">
-            {editingId === post._id ? (
+            {editingId === post.id ? (
               <EditForm
                 post={post}
                 onCancel={() => setEditingId(null)}
@@ -456,13 +456,13 @@ function BoardSection({ apiCategory, refreshKey }) {
                 {/* 수정/삭제 버튼 */}
                 {canModify(post) && (
                   <div className="flex gap-2 mt-3">
-                    <button className="btn btn-outline btn-xs" onClick={(e) => { e.stopPropagation(); setEditingId(post._id); }}>수정</button>
-                    <button className="btn btn-outline btn-error btn-xs" onClick={(e) => { e.stopPropagation(); handleDelete(post._id); }}>삭제</button>
+                    <button className="btn btn-outline btn-xs" onClick={(e) => { e.stopPropagation(); setEditingId(post.id); }}>수정</button>
+                    <button className="btn btn-outline btn-error btn-xs" onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}>삭제</button>
                   </div>
                 )}
 
                 {/* 커뮤니티 댓글 */}
-                {isCommunity && <CommentSection boardId={post._id} />}
+                {isCommunity && <CommentSection boardId={post.id} />}
               </>
             )}
           </div>
