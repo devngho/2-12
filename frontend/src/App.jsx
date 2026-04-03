@@ -7,6 +7,7 @@ import LoginSuccess from './pages/LoginSuccess';
 import Register from './pages/Register';
 import RegisterSuccess from './pages/RegisterSuccess';
 import BoardList from './pages/BoardList';
+import Board from './pages/Board';
 import FilesList from './pages/FilesList';
 import Timetable from './pages/Timetable';
 import Menu from './pages/Menu';
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/register-success" element={<RegisterSuccess />} />
           
           {/* Boards & Notices */}
+          <Route path="/board" element={<Board />} />
           <Route path="/board/community" element={<BoardList title="커뮤니티" apiCategory="일반" />} />
           <Route path="/notice/class" element={<BoardList title="학급 공지사항" apiCategory="공지" />} />
           <Route path="/notice/assessments" element={<BoardList title="수행평가 공지" apiCategory="수행평가" />} />

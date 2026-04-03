@@ -11,7 +11,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://2-12.ngho.dev', // http://localhost:3000',
         changeOrigin: true,
       }
     }

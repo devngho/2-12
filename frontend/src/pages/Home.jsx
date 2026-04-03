@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import logo2 from '../assets/logo2.svg';
 
 const menuItems = [
-  { name: '공지사항', path: '/notice/class' },
-  { name: '커뮤니티', path: '/board/community' },
+  { name: '게시판', path: '/board' },
   { name: '급식표', path: '/menu' },
   { name: '시간표', path: '/timetable' },
   { name: '출결 확인', path: '/attend' },
@@ -477,7 +476,7 @@ export default function Home() {
   const cy = SVG_SIZE / 2;
   const innerRadius = 130;
   const outerRadius = 250;
-  // 7개로 360도를 정확히 등분 (약 51.4도)
+  // 6개로 360도를 정확히 등분 (60도)
   const sliceAngle = 360 / menuItems.length;
 
   return (
