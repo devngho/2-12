@@ -25,7 +25,8 @@ const boardSchema = new Schema({
       userId: { type: String, required: true },
       nickname: { type: String, required: true },
       content: { type: String, required: true },
-      commentedAt: { type: Date, default: Date.now }
+      commentedAt: { type: Date, default: Date.now },
+      isDeleted: { type: Boolean, default: false },
     }
   ]
 });

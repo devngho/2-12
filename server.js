@@ -5,7 +5,7 @@ import { unlink } from 'fs';
 import cookieParser from 'cookie-parser';
 import File from './models/File.js';
 import authRoutes from './routes/authRoutes.js';
-import fileRoutes from './routes/fileRoutes.js';
+import commentRoutes from './routes/commentRoutes.js';
 import boardRoutes from './routes/boardRoutes.js';
 import timeTableRoutes from './routes/timeTableRoutes.js';
 import menuRoutes from './routes/menuRoutes.js';
@@ -18,7 +18,7 @@ app.use(cookieParser());
 
 // 라우터 연결
 app.use('/api/auth', authRoutes);
-app.use('/api/files', fileRoutes);
+app.use('/api/comments', commentRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/timetable', timeTableRoutes);
 app.use('/api/menu', menuRoutes);
