@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import logo2 from '../assets/logo2.svg';
 
 const menuItems = [
-  { name: '공지사항', path: '/notice/class' },
-  { name: '커뮤니티', path: '/board/community' },
+  { name: '게시판', path: '/board' },
   { name: '급식표', path: '/menu' },
   { name: '시간표', path: '/timetable' },
   { name: '출결 확인', path: '/attend' },
@@ -94,6 +93,30 @@ const ParticleSystem = ({ isOpen }) => {
       oCtx.fillText('ㅎ', leftBoundary, visualCenterY);
       oCtx.fillText('ㅇ', rightBoundary, visualCenterY);
 
+      // const imgData = oCtx.getImageData(0, 0, width, height).data;
+      // const coords = [];
+      // const density = Math.max(2, Math.floor(width / 500)); // 테두리는 입자가 더 촘촘해야 예쁘므로 밀도 보정
+
+      // for (let y = density; y < height - density; y += density) {
+      //   for (let x = density; x < width - density; x += density) {
+      //     const idx = (y * width + x) * 4;
+
+      //     // 현재 픽셀이 불투명(글자 안)인지 확인
+      //     if (imgData[idx + 3] > 128) {
+      //       // 상하좌우 인접 픽셀 중 하나라도 투명(글자 밖)하다면 '테두리'로 판정
+      //       const up = ((y - density) * width + x) * 4;
+      //       const down = ((y + density) * width + x) * 4;
+      //       const left = (y * width + (x - density)) * 4;
+      //       const right = (y * width + (x + density)) * 4;
+
+      //       if (imgData[up + 3] < 128 || imgData[down + 3] < 128 ||
+      //         imgData[left + 3] < 128 || imgData[right + 3] < 128) {
+      //         coords.push({ x, y });
+      //       }
+      //     }
+      //   }
+      // }
+
       const imgData = oCtx.getImageData(0, 0, width, height).data;
       const coords = [];
       const density = Math.max(3, Math.floor(width / 350));
@@ -114,7 +137,7 @@ const ParticleSystem = ({ isOpen }) => {
       }
 
       // 글자로 뭉치는 입자 수 약간 감축 (480개) - 더 가볍고 미니멀해짐
-      targetCoords = coords.slice(0, 1500);
+      targetCoords = coords.slice(0, 2500);
       // X 좌표 기준으로 정렬 (왼쪽 입자는 'ㅎ', 오른쪽 입자는 'ㅇ'으로 가장 짧은 동선을 그림)
       targetCoords.sort((a, b) => a.x - b.x);
 
@@ -421,7 +444,7 @@ const ParticleSystem = ({ isOpen }) => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-screen h-screen z-0 pointer-events-none"
+      className="fixed inset-0 w-screen h-screen z-0 pointer-events-none blur-[0.8px]"
     />
   );
 };
@@ -453,7 +476,7 @@ export default function Home() {
   const cy = SVG_SIZE / 2;
   const innerRadius = 130;
   const outerRadius = 250;
-  // 7개로 360도를 정확히 등분 (약 51.4도)
+  // 6개로 360도를 정확히 등분 (60도)
   const sliceAngle = 360 / menuItems.length;
 
   return (
@@ -468,22 +491,27 @@ export default function Home() {
         >
           {/* 중앙 로고 */}
           <div
-            className="z-30 transition-transform duration-[800ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] relative cursor-pointer group"
-            style={{ transform: isOpen ? 'scale(1.15)' : 'scale(1)' }}
-            onClick={() => setIsOpen(!isOpen)}
+            className="z-20 transition-transform duration-[800ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] relative flex items-center justify-center pointer-events-none"
+            style={{ transform: isOpen ? 'scale(1.15)' : 'scale(0.8)' }}
           >
-            {/* 스케일 다운: w-80 -> w-64 변경하여 여백 확보 */}
-            <img
-              src={logo2}
-              alt="Bugil212 Logo"
-              className={`w-64 h-auto drop-shadow-sm pointer-events-none transition-transform duration-500 
-                ${!isOpen ? 'group-hover:scale-[1.07]' : ''}`}
-            />
+            <div
+              className="relative rounded-full pointer-events-auto cursor-pointer group flex items-center justify-center"
+              style={{ width: '220px', height: '220px' }}
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              {/* 스케일 다운: w-80 -> w-64 변경하여 여백 확보 */}
+              <img
+                src={logo2}
+                alt="Bugil212 Logo"
+                className={`absolute z-10 select-none w-64 max-w-none h-auto drop-shadow-sm pointer-events-none transition-transform duration-500 
+                  ${!isOpen ? 'group-hover:scale-[1.07]' : ''}`}
+              />
+            </div>
           </div>
 
           {/* SVG 방사형 부채꼴 메뉴 */}
           <div
-            className="absolute inset-0 z-20 pointer-events-none"
+            className="absolute inset-0 z-10 pointer-events-none"
           >
             <svg width="100%" height="100%" viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}>
               <g>

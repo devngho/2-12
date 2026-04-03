@@ -3,8 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import logo1 from '../../assets/logo1.svg';
 
 const menuItems = [
-  { name: '공지사항', path: '/notice/class' },
-  { name: '커뮤니티', path: '/board/community' },
+  { name: '게시판', path: '/board' },
   { name: '급식표', path: '/menu' },
   { name: '시간표', path: '/timetable' },
   { name: '출결 확인', path: '/attend' },
@@ -38,7 +37,7 @@ export default function FloatingMenu() {
 
   // 항목이 밑에서부터 쌓여서 올라가도록 배열 순서를 뒤집어 렌더링 준비
   return (
-    <div ref={menuRef} className="fixed bottom-8 right-8 z-[100] flex flex-col items-center xl:right-12 xl:bottom-12">
+    <div ref={menuRef} className="select-none fixed bottom-8 right-8 z-[100] flex flex-col items-center xl:right-12 xl:bottom-12">
       {/* 팝업 메뉴 리스트 */}
       <div className="flex flex-col-reverse mb-4 gap-3 items-center pointer-events-none">
         {validItems.reverse().map((item, idx) => (

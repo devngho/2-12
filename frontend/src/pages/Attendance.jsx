@@ -53,10 +53,11 @@ export default function Attendance() {
 
       {/* 나의 출결 설정 영역 */}
       <div className="w-full flex flex-col items-center">
-        <h2 className="text-3xl font-bold mb-3">나의 야자 출결 현황</h2>
-        <p className="opacity-60 text-base mb-10">오늘 나의 야간자율학습 참여 상태를 선택해주세요. (임시: 1번 학생에 반영)</p>
+        <h2 className="text-3xl font-bold mb-3">나의 자습 현황</h2>
+        {/* <p className="opacity-60 text-base mb-10">오늘 나의 야간자율학습 참여 상태를 선택해주세요. (임시: 1번 학생에 반영)</p> */}
+        <div className='mb-10' />
 
-        <div className="flex flex-col sm:flex-row gap-6 w-full justify-center px-4">
+        <div className="flex flex-col sm:flex-row gap-10 w-full justify-center px-4">
           {/* 불참 (Red) */}
           <button
             onClick={() => handleStatusChange('absent')}
@@ -105,7 +106,7 @@ export default function Attendance() {
               </label>
               <input
                 type="text"
-                placeholder={myStatus === 'absent' ? "예: 병원 진료, 학원, 기타 개인 사정" : "예: 학생회 기획회의, 생물 동아리 활동"}
+                placeholder={myStatus === 'absent' ? "예: 병원 진료, 학원, 기타 개인 사정" : "예: 학생회 기획회의, 국제교류 활동"}
                 className="input input-bordered w-full border-2 focus:border-neutral focus:ring-0 transition-colors"
                 value={myRemarks}
                 onChange={(e) => setMyRemarks(e.target.value)}
