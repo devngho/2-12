@@ -8,7 +8,7 @@ const userSchema = new Schema({
     role: { 
         type: String, 
         required: true,
-        enum: ['학생', '반장', '부반장', '담임', '1인1역할', '관리자'] 
+        enum: ['일반', '반장', '부반장', '담임', '1인1역할', '관리자'] 
     },
     isApproved: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now }
