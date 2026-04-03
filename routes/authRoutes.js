@@ -1,7 +1,11 @@
-import { Router } from 'express';
-import { genSalt, hash, compare } from 'bcryptjs';
+import express from 'express';
+import bcryptjs from 'bcryptjs';
 import pkg from 'jsonwebtoken';
+
+const { Router } = express;
+const { genSalt, hash, compare } = bcryptjs;
 const { sign } = pkg;
+
 import User from '../models/User.js';
 import verifyToken from '../middleware/auth.js';
 const router = Router();
@@ -10,7 +14,7 @@ const router = Router();
 router.get('/registration-status', async (req, res) => {
     try {
         const hasAdmin = async () => await User.exists({ role: '관리자' }) !== null;
-        const hasTeacher = async () => await User.exists({ role: '담임', isApproved: true }) !== null;
+        const hasTeacher = async () => await User.exists({ role: '선생님', isApproved: true }) !== null;
         const hasPresident = async () => await User.exists({ role: '반장', isApproved: true }) !== null;
         const hasVicePresident = async () => await User.exists({ role: '부반장', isApproved: true }) !== null;
 
@@ -110,7 +114,7 @@ router.patch('/approve/:userId', verifyToken, /** @param {import('../auth.js').A
         const targetUser = await User.findById(req.params.userId);
         if (!targetUser) return res.status(404).json({ error: '대상 사용자를 찾을 수 없습니다.' });
 
-        if (['담임', '반장', '부반장'].includes(targetUser.role) && await User.exists({ role: targetUser.role, isApproved: true })) {
+        if (['선생님', '반장', '부반장'].includes(targetUser.role) && await User.exists({ role: targetUser.role, isApproved: true })) {
             return res.status(400).json({ error: `이미 승인된 ${targetUser.role}이(가) 있습니다.` });
         }
         targetUser.isApproved = true;

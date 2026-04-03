@@ -1,14 +1,19 @@
-import express, { json, urlencoded } from 'express';
-import { connect } from 'mongoose';
-import { schedule } from 'node-cron';
+import express from 'express';
+import mongoose from 'mongoose';
+import cron from 'node-cron';
 import { unlink } from 'fs';
 import cookieParser from 'cookie-parser';
-import File from './models/File.js';
+
+const { json, urlencoded } = express;
+const { connect } = mongoose;
+const { schedule } = cron;
+
 import authRoutes from './routes/authRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
 import boardRoutes from './routes/boardRoutes.js';
 import timeTableRoutes from './routes/timeTableRoutes.js';
 import menuRoutes from './routes/menuRoutes.js';
+import calendarRoutes from './routes/calendarRoutes.js';
 
 const app = express();
 
@@ -22,6 +27,7 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/timetable', timeTableRoutes);
 app.use('/api/menu', menuRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // MongoDB 연결 (class_website라는 이름의 DB 사용)
 connect(process.env.MONGODB_URL ?? "", { dbName: process.env.MONGODB_DB_NAME ?? "prod" })
