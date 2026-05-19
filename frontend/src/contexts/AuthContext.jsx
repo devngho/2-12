@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext(null);
 
@@ -17,17 +17,18 @@ export function useAuth() {
 export function useRequireAuth() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     if (loading) return;
 
     if (!user) {
       const timer = setTimeout(() => {
-        navigate('/login');
+        navigate('/login?prev=' + pathname);
       }, 2500);
       return () => clearTimeout(timer);
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, pathname]);
 
   const ToastComponent = (!loading && !user) ? (
     <div className="toast toast-center toast-top z-9999">

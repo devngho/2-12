@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams, _] = useSearchParams();
   const { login } = useAuth();
   const [formData, setFormData] = useState({ studentId: '', password: '' });
   const [error, setError] = useState('');
@@ -19,7 +20,8 @@ export default function Login() {
       // 세션에서 유저 정보 가져오기
       const { data: session } = await api.get('/auth/session');
       login(session);
-      navigate('/login-success');
+      const prev = searchParams.get('prev');
+      navigate(prev ?? '/login-success');
     } catch (err) {
       setError(err.response?.data?.error || '로그인에 실패했습니다.');
     } finally {
@@ -67,7 +69,7 @@ export default function Login() {
             </div>
             
             <div className="text-center mt-4 text-sm text-base-content/70">
-              계정이 없으신가요? <Link to="/register" className="link link-hover font-semibold text-neutral">회원가입</Link>
+              계정이 없으신가요? <Link to={searchParams.get('prev') ? `/register?prev=${searchParams.get('prev')}` : '/register'} className="link link-hover font-semibold text-neutral">회원가입</Link>
             </div>
           </form>
         </div>

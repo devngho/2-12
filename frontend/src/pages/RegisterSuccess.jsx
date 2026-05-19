@@ -1,7 +1,9 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function RegisterSuccess() {
   const navigate = useNavigate();
+  const [searchParams, _] = useSearchParams();
+
   return (
     <div className="flex-grow flex items-center justify-center py-12">
       <div className="card w-full max-w-sm bg-base-100 shadow-xl border border-base-200 text-center">
@@ -16,7 +18,7 @@ export default function RegisterSuccess() {
             <p>성공적으로 가입되었습니다.</p>
             <p>관리자 승인 후 즉시 이용 가능합니다.</p>
           </p>
-          <button onClick={() => navigate('/login')} className="btn btn-neutral w-full">
+          <button onClick={() => navigate(searchParams.get('prev') ? `/login?prev=${searchParams.get('prev')}` : '/login')} className="btn btn-neutral w-full">
             로그인 화면으로
           </button>
         </div>

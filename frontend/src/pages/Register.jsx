@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 
 export default function Register() {
   const navigate = useNavigate();
+  const [searchParams, _] = useSearchParams()
   const [formData, setFormData] = useState({ studentId: '', password: '', name: '', role: '일반' });
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -19,7 +20,7 @@ export default function Register() {
     setLoading(true);
     try {
       const { data } = await api.post('/auth/register', formData);
-      navigate('/register-success');
+      navigate(searchParams.get('prev') ? `/register-success?prev=${searchParams.get('prev')}` : '/register-success');
     } catch (err) {
       setError(err.response?.data?.error || '회원가입에 실패했습니다.');
     } finally {
@@ -98,7 +99,7 @@ export default function Register() {
             </div>
             
             <div className="text-center mt-4 text-sm text-base-content/70">
-              이미 계정이 있으신가요? <Link to="/login" className="link link-hover font-semibold text-neutral">로그인</Link>
+              이미 계정이 있으신가요? <Link to={searchParams.get('prev') ? `/login?prev=${searchParams.get('prev')}` : '/login'} className="link link-hover font-semibold text-neutral">로그인</Link>
             </div>
           </form>
         </div>
