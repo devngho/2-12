@@ -21,9 +21,12 @@ export default function Navbar() {
       <div className="flex-none px-4 flex items-center gap-3">
         {user ? (
           <>
-            <span className="text-sm font-medium text-base-content/70">
+            <span className="text-sm font-medium text-base-content/70 dark:text-black">
               {user.id} {user.name}
             </span>
+            {user.role === '관리자' && <Link to="/admin" className="btn btn-outline border-black text-black hover:bg-black hover:text-white rounded-full px-6">
+              관리
+            </Link>}
             <button
               onClick={handleLogout}
               className="btn btn-outline border-black text-black hover:bg-black hover:text-white rounded-full px-6"

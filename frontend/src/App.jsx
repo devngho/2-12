@@ -15,6 +15,7 @@ import Menu from './pages/Menu';
 import Attendance from './pages/Attendance';
 import NumberPicker from './pages/NumberPicker';
 import Calendar from './pages/Calendar';
+import Admin from './pages/Admin';
 
 function Ybt() { return <div className="py-20 text-center">열북타 준비 중</div>; }
 
@@ -25,6 +26,7 @@ export default function App() {
         <PageWrapper>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="/login" element={<Login />} />
             <Route path="/login-success" element={<LoginSuccess />} />
             <Route path="/register" element={<Register />} />
