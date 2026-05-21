@@ -69,7 +69,7 @@ function Approver() {
                                     <button
                                         onClick={() => handleApproval(user._id)}
                                         disabled={user.isApproving}
-                                        className="px-4 py-2 text-white rounded btn btn-outline"
+                                        className="px-4 py-2 dark:text-white rounded btn btn-outline"
                                     >
                                         {user.isApproving ? <span className="loading loading-spinner" /> : "승인"}
                                     </button>
