@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth, useRequireAuth } from '../contexts/AuthContext';
 import api from '../services/api';
+import Markdown from 'react-markdown';
 
 const TABS = [
   { label: '공지사항', apiCategory: '공지' },
@@ -459,7 +460,7 @@ function BoardSection({ apiCategory, refreshKey }) {
               />
             ) : (
               <>
-                <p className="whitespace-pre-wrap text-sm text-base-content/80">{post.content}</p>
+                <div className="whitespace-pre-wrap text-sm text-base-content/80 markdown"><Markdown>{post.content}</Markdown></div>
 
                 {/* 마감일 배지 */}
                 {post.deadline && (
