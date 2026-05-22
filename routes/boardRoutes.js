@@ -29,8 +29,8 @@ mkdir('uploads', { recursive: true }, (err) => {
 });
 
 const storage = diskStorage({
-    destination: (req, file, cb) => cb(null, 'uploads/'),
-    filename: (req, file, cb) => cb(null, Date.now() + extname(file.originalname))
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, Date.now() + extname(file.originalname))
 });
 
 const upload = multer({ storage: storage, limits: { fileSize: 1 * 1024 * 1024 * 1024 }, defParamCharset: 'utf8' }); // 1GiB
@@ -56,7 +56,7 @@ router.post('/', verifyToken, upload.array('files'), /** @param {import('../auth
   if (PRIVILEGED_CATEGORIES.includes(category) && !PRIVILEGED_ROLES.includes(req.user.role)) {
     return res.status(403).json({ error: '공지는 관리자, 반장, 부반장, 선생님만 작성할 수 있습니다.' });
   }
-  
+
   if (typeof title !== 'string' || typeof category !== 'string' || typeof content !== 'string') {
     return res.status(400).json({ error: 'title, category, content는 문자열이어야 합니다.' });
   }
@@ -97,7 +97,7 @@ router.post('/', verifyToken, upload.array('files'), /** @param {import('../auth
       const dateKey = `${parsedDeadline.getFullYear()}-${String(parsedDeadline.getMonth() + 1).padStart(2, '0')}-${String(parsedDeadline.getDate()).padStart(2, '0')}`;
       const calEvent = new CalendarEvent({
         date: dateKey,
-        title: `[수행] ${title}`,
+        title: `${title}`,
         content: content,
         authorId: req.user.id,
         source: 'assessment',
