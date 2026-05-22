@@ -30,7 +30,7 @@ app.use('/api/calendar', calendarRoutes);
 
 // MongoDB 연결 (class_website라는 이름의 DB 사용)
 connect(process.env.MONGODB_URL ?? "", { dbName: process.env.MONGODB_DB_NAME ?? "prod" })
-    .then(() => console.log('✅ MongoDB 연결 성공'))
+    .then(() => console.log('✅ MongoDB 연결 성공:', process.env.MONGODB_DB_NAME ?? "prod"))
     .catch(err => console.error('❌ MongoDB 연결 실패:', err));
 
 // 6개월 자동 삭제 스케줄러 (매일 자정 실행)
