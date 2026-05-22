@@ -202,9 +202,9 @@ export default function Calendar() {
                         <div
                           key={event._id}
                           onClick={(e) => { e.stopPropagation(); setDetailEvent({ ...event, dateKey }); }}
-                          className={`text-[10px] sm:text-xs p-1 rounded truncate hover:opacity-80`}
+                          className={`text-[10px] sm:text-xs p-1 rounded truncate hover:opacity-80 bg-white text-black border border-gray-200 shadow-sm hover:bg-gray-50`}
                         >
-                          {event.title}
+                          {(event.title || '').replace(/^\[수행평가\]\s*/, '').replace(/^\[수행\]\s*/, '')}
                         </div>
                       ))}
                     </div>
@@ -223,7 +223,12 @@ export default function Calendar() {
 
             <div className="flex flex-col gap-2 mb-4 max-h-40 overflow-y-auto">
               {getEventsForDate(selectedDateKey).map(event => (
-                <div key={event._id} className={`flex justify-between items-center p-2 rounded ${event.source === 'assessment' ? 'bg-neutral/10' : 'bg-base-200'}`}>
+                <div key={event._id} className="flex justify-between items-center p-2 rounded bg-base-200">
+                  <div className="flex flex-col truncate w-3/5">
+                    <span className="text-sm truncate">
+                      {(event.title || '').replace(/^\[수행평가\]\s*/, '').replace(/^\[수행\]\s*/, '')}
+                    </span>
+                  </div>
                   {canManage && event.source === 'manual' && (
                     <div className="space-x-1 shrink-0 flex">
                       <button className="btn btn-xs btn-outline" onClick={(e) => handleEditEvent(event, e)}>수정</button>
@@ -298,7 +303,9 @@ export default function Calendar() {
             <div className="modal-box w-11/12 max-w-sm">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="font-bold text-lg truncate pr-2">{detailEvent.title}</h3>
+                  <h3 className="font-bold text-lg truncate pr-2">
+                    {(detailEvent.title || '').replace(/^\[수행평가\]\s*/, '').replace(/^\[수행\]\s*/, '')}
+                  </h3>
                 </div>
                 <div className="flex gap-1 shrink-0">
                   <button
