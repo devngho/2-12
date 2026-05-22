@@ -202,10 +202,7 @@ export default function Calendar() {
                         <div
                           key={event._id}
                           onClick={(e) => { e.stopPropagation(); setDetailEvent({ ...event, dateKey }); }}
-                          className={`text-[10px] sm:text-xs p-1 rounded truncate hover:opacity-80 ${event.source === 'assessment'
-                            ? 'bg-neutral text-white border border-neutral shadow-sm'
-                            : 'bg-white text-black border border-gray-200 shadow-sm hover:bg-gray-50'
-                            }`}
+                          className={`text-[10px] sm:text-xs p-1 rounded truncate hover:opacity-80 bg-white text-black border border-gray-200 shadow-sm hover:bg-gray-50`}
                         >
                           {event.title}
                         </div>
