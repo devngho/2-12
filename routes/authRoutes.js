@@ -47,7 +47,7 @@ router.post('/register', async (req, res) => {
 
         const newUser = new User({
             studentId, name, password: hashedPassword, role,
-            isApproved: role === '관리자' // 관리자는 즉시 승인
+            isApproved: true // role === '관리자' // 관리자는 즉시 승인
         });
 
         await newUser.save();
