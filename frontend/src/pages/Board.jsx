@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth, useRequireAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import Markdown from 'react-markdown';
+import { useSearchParams } from 'react-router-dom';
 
 const TABS = [
   { label: '공지사항', apiCategory: '공지' },
@@ -17,7 +18,7 @@ const MAX_FILE_SIZE = 1000 * 1024 * 1024; // 1 GiB
 const getAttachmentHref = (filePath) => {
   if (!filePath) return '#';
   if (/^https?:\/\//i.test(filePath)) return filePath;
-  return `/${filePath.replace(/^\/+/, '')}`;
+  return `/${filePath.replace(/\\/g, '/').replace(/^\/+/, '')}`;
 };
 
 // ────────────────────────────────────────────────
@@ -488,6 +489,7 @@ function BoardSection({ apiCategory, refreshKey }) {
                       <a
                         key={`${attachment.filePath || attachment.fileName}-${index}`}
                         href={getAttachmentHref(attachment.filePath)}
+                        download={attachment.fileName || undefined}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 text-xs text-primary underline w-fit"
@@ -524,11 +526,25 @@ function BoardSection({ apiCategory, refreshKey }) {
 export default function Board() {
   const { isAuthed, ToastComponent } = useRequireAuth();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const paramTab = TABS.findIndex(tab => tab.apiCategory === searchParams.get('category'))
+  const [activeTab, setActiveTab] = useState(paramTab == -1 ? 0 : paramTab);
   const [showForm, setShowForm] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleSuccess = () => setRefreshKey(k => k + 1);
+
+  useEffect(() => {
+    const category = TABS[activeTab]?.apiCategory;
+    if (category) {
+      if (activeTab === 0) { // ignore default tab
+        setSearchParams({});
+      } else {
+        setSearchParams({ category });
+      }
+    }
+  }, [activeTab, setSearchParams]);
 
   // 비로그인 시 토스트 + 리다이렉트
   if (!isAuthed) {
@@ -544,7 +560,7 @@ export default function Board() {
   const currentTab = TABS[activeTab];
   const canWrite = (() => {
     if (!user) return false;
-    if (currentTab.apiCategory === '공지' || currentTab.apiCategory === '수행평가') {
+    if (currentTab.apiCategory === '공지' || currentTab.apiCategory === '수행') {
       return PRIVILEGED_ROLES.includes(user.role);
     }
     return true; // 커뮤니티, 파일공유는 모두 가능

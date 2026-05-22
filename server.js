@@ -2,8 +2,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cron from 'node-cron';
 import { unlink } from 'fs';
+import { join } from 'path';
 import cookieParser from 'cookie-parser';
-const { json, urlencoded } = express;
+const { json, static: expressStatic, urlencoded } = express;
 const { connect } = mongoose;
 import authRoutes from './routes/authRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
@@ -17,6 +18,7 @@ const app = express();
 app.use(json());
 app.use(urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use('/uploads', expressStatic(join(process.cwd(), 'uploads')));
 
 // 라우터 연결
 app.use('/api/auth', authRoutes);
