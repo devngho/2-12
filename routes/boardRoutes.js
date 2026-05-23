@@ -1,22 +1,42 @@
-import { Router } from 'express';
-import { genSalt, hash } from 'bcryptjs';
+import express from 'express';
+import bcryptjs from 'bcryptjs';
+
+const { Router } = express;
+const { genSalt, hash } = bcryptjs;
+
 import multer, { diskStorage } from 'multer';
 import { extname } from 'path';
 import Board from '../models/Board.js';
 import User from '../models/User.js';
+import CalendarEvent from '../models/CalendarEvent.js';
 import verifyToken from '../middleware/auth.js';
 import { redactAuthorId } from './commentRoutes.js';
+import { mkdir } from 'fs';
 
 const router = Router();
 
-const storage = diskStorage({
-    destination: (req, file, cb) => cb(null, 'uploads/'),
-    filename: (req, file, cb) => cb(null, Date.now() + extname(file.originalname))
+const CATEGORIES = ['공지', '수행', '일반', '파일'];
+const PRIVILEGED_CATEGORIES = ['공지', '수행'];
+const PRIVILEGED_ROLES = ['관리자', '반장', '부반장', '선생님'];
+const ANNOYMOUS_CATEGORIES = ['일반'];
+
+// 글 등록
+// create folder if not exists
+mkdir('uploads', { recursive: true }, (err) => {
+  if (err) {
+    console.error('업로드 폴더 생성 오류:', err);
+  }
 });
-const upload = multer({ storage: storage, limits: { fileSize: 1 * 1024 * 1024 * 1024 } }); // 1GiB
+
+const storage = diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, Date.now() + extname(file.originalname))
+});
+
+const upload = multer({ storage: storage, limits: { fileSize: 1 * 1024 * 1024 * 1024 }, defParamCharset: 'utf8' }); // 1GiB
 
 router.post('/', verifyToken, upload.array('files'), /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
-  const { title, category, content, deadline, dDayAlarm } = req.body;
+  const { title, category, content, nickname, deadline, dDayAlarm } = req.body;
   const parsedDeadline = deadline ? new Date(deadline) : undefined;
   const parsedDeadlineTime = parsedDeadline?.getTime();
   const parsedDdayAlarm = typeof dDayAlarm === 'string' ? Number.parseInt(dDayAlarm, 10) : dDayAlarm;
@@ -28,6 +48,14 @@ router.post('/', verifyToken, upload.array('files'), /** @param {import('../auth
     : [];
 
   if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
+
+  if (!CATEGORIES.includes(category)) {
+    return res.status(400).json({ error: '유효하지 않은 카테고리입니다.' });
+  }
+
+  if (PRIVILEGED_CATEGORIES.includes(category) && !PRIVILEGED_ROLES.includes(req.user.role)) {
+    return res.status(403).json({ error: '공지는 관리자, 반장, 부반장, 선생님만 작성할 수 있습니다.' });
+  }
 
   if (typeof title !== 'string' || typeof category !== 'string' || typeof content !== 'string') {
     return res.status(400).json({ error: 'title, category, content는 문자열이어야 합니다.' });
@@ -41,8 +69,12 @@ router.post('/', verifyToken, upload.array('files'), /** @param {import('../auth
     return res.status(400).json({ error: 'dDayAlarm은 숫자여야 합니다.' });
   }
 
-  if (category === '공지' && !['관리자', '반장', '부반장'].includes(req.user.role)) {
-    return res.status(403).json({ error: '공지는 관리자, 반장, 부반장만 작성할 수 있습니다.' });
+  if (ANNOYMOUS_CATEGORIES.includes(category) && (!nickname || nickname.trim() === '')) {
+    return res.status(400).json({ error: '익명 게시글은 닉네임이 필요합니다.' });
+  }
+
+  if (!ANNOYMOUS_CATEGORIES.includes(category) && nickname) {
+    return res.status(400).json({ error: '익명 게시글이 아닌 경우 닉네임을 사용할 수 없습니다.' });
   }
 
   try {
@@ -50,15 +82,30 @@ router.post('/', verifyToken, upload.array('files'), /** @param {import('../auth
       title,
       category,
       content,
+      nickname: nickname ?? undefined,
       deadline: parsedDeadline,
       dDayAlarm: parsedDdayAlarm,
       authorId: req.user.id,
-      authorRole: req.user.role,
       authorName: req.user.name,
       files: uploadedFiles
     });
 
     await newBoard.save();
+
+    // 수행평가 + 마감일이 있으면 캘린더에 자동 등록
+    if (category === '수행' && parsedDeadline) {
+      const dateKey = `${parsedDeadline.getFullYear()}-${String(parsedDeadline.getMonth() + 1).padStart(2, '0')}-${String(parsedDeadline.getDate()).padStart(2, '0')}`;
+      const calEvent = new CalendarEvent({
+        date: new Date(dateKey),
+        title: `${title}`,
+        content: content,
+        authorId: req.user.id,
+        source: 'assessment',
+        boardId: newBoard._id,
+      });
+      await calEvent.save();
+    }
+
     res.status(201).json({ message: '글이 등록되었습니다.', data: newBoard });
   } catch (error) {
     console.error(error);
@@ -66,44 +113,54 @@ router.post('/', verifyToken, upload.array('files'), /** @param {import('../auth
   }
 });
 
-// [기능 2] 전체 공지 조회 (분야별 필터링은 프론트에서 처리하거나 쿼리로 처리)
+// 전체 글 조회 (isDeleted: false만)
 router.get('/', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
   if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
 
   try {
     const { category } = req.query;
-    /** @type {{ category?: string }} */
-    const query = {};
+    /** @type {Record<string, any>} */
+    const query = { isDeleted: false };
 
     if (category) {
-      // check is category is string
       if (typeof category !== 'string') {
         return res.status(400).json({ error: '카테고리 쿼리는 문자열이어야 합니다.' });
       }
-
       query.category = category;
     }
 
-    const boards = await Board.find(query).sort({ createdAt: -1 });
-    res.status(200).json(boards.map((board) => ({
-      id: board._id,
-      title: board.title,
-      category: board.category,
-      content: board.content,
-      deadline: board.deadline,
-      dDayAlarm: board.dDayAlarm,
-      authorId: board.authorId,
-      authorName: board.authorName,
-      files: board.files,
-      createdAt: board.createdAt,
-      comments: redactAuthorId(board.comments)
-    })));
+    const boards = await Board.find(query).sort({ isPinned: -1, position: 1, createdAt: -1 });
+    res.status(200).json(boards.map((board) => {
+      /** @type {Record<string, any>} */
+      const res = {
+        id: board._id,
+        title: board.title,
+        category: board.category,
+        content: board.content,
+        deadline: board.deadline,
+        dDayAlarm: board.dDayAlarm,
+        files: board.files,
+        createdAt: board.createdAt,
+        comments: redactAuthorId(board.comments),
+        isPinned: board.isPinned || false,
+        position: board.position || 0
+      }
+
+      if (!ANNOYMOUS_CATEGORIES.includes(board.category)) {
+        res.authorId = board.authorId;
+        res.authorName = board.authorName;
+      } else {
+        res.nickname = board.nickname;
+      }
+
+      return res;
+    }));
   } catch (error) {
     res.status(500).json({ error: '글 조회 오류' });
   }
 });
 
-// [기능 3] 알림창 전용 데이터 (D-Day 임박한 수행평가만 추출)
+// 알림창 전용 데이터 (D-Day 임박한 수행평가만 추출)
 router.get('/alerts', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
   if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
 
@@ -114,7 +171,10 @@ router.get('/alerts', verifyToken, /** @param {import('../auth.js').Authenticate
   }
 
   try {
-    const boards = category ? await Board.find({ category }).sort({ deadline: 1 }) : await Board.find().sort({ deadline: 1 });
+    /** @type {Record<string, any>} */
+    const filter = { isDeleted: false };
+    if (category) filter.category = category;
+    const boards = await Board.find(filter).sort({ deadline: 1 });
     const today = new Date();
 
     const alerts = boards.filter((board) => {
@@ -132,13 +192,137 @@ router.get('/alerts', verifyToken, /** @param {import('../auth.js').Authenticate
   }
 });
 
-// [기능 4] 비밀번호 변경 (반장, 부반장, 관리자 전용)
+// 글 수정 (작성자 또는 반장/부반장/선생님/관리자)
+router.patch('/:id', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
+
+  try {
+    const board = await Board.findById(req.params.id);
+    if (!board) return res.status(404).json({ error: '글을 찾을 수 없습니다.' });
+
+    const isAuthor = board.authorId === req.user.id;
+    const isPrivileged = PRIVILEGED_ROLES.includes(req.user.role);
+
+    if (!isAuthor && !isPrivileged) {
+      return res.status(403).json({ error: '수정 권한이 없습니다.' });
+    }
+
+    // 수정 전 원본을 editHistory에 기록 (감사 로그)
+    board.editHistory.push({
+      title: board.title,
+      content: board.content,
+      deadline: board.deadline,
+      editedAt: new Date()
+    });
+
+    const { title, content, deadline, isPinned } = req.body;
+    if (title !== undefined) board.title = title;
+    if (content !== undefined) board.content = content;
+    if (isPinned !== undefined) {
+      const pinAllowedRoles = ['관리자', '반장', '부반장'];
+      if (!pinAllowedRoles.includes(req.user.role)) {
+        return res.status(403).json({ error: '고정 권한이 없습니다.' });
+      }
+      board.isPinned = isPinned;
+      board.position = 0; // Reset position to 0 so it goes to top of new section
+    }
+
+    // 수행평가 글의 경우 마감일도 수정 가능
+    if (board.category === '수행' && deadline !== undefined) {
+      const oldDeadline = board.deadline;
+      board.deadline = deadline ? new Date(deadline) : null;
+
+      // 연동된 CalendarEvent 업데이트
+      if (board.deadline) {
+        const dateKey = `${board.deadline.getFullYear()}-${String(board.deadline.getMonth() + 1).padStart(2, '0')}-${String(board.deadline.getDate()).padStart(2, '0')}`;
+        await CalendarEvent.findOneAndUpdate(
+          { boardId: board._id, source: 'assessment' },
+          {
+            date: new Date(dateKey),
+            title: `[수행] ${board.title}`,
+            content: board.content
+          }
+        );
+      } else {
+        // 마감일 제거 시 CalendarEvent도 삭제
+        await CalendarEvent.deleteOne({ boardId: board._id, source: 'assessment' });
+      }
+    }
+
+    await board.save();
+    res.json({ message: '글이 수정되었습니다.', data: board });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: '글 수정 오류' });
+  }
+});
+
+// 글 삭제 — Soft Delete (작성자 또는 반장/부반장/선생님/관리자)
+router.delete('/:id', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
+
+  try {
+    const board = await Board.findById(req.params.id);
+    if (!board) return res.status(404).json({ error: '글을 찾을 수 없습니다.' });
+
+    const isAuthor = board.authorId === req.user.id;
+    const isPrivileged = PRIVILEGED_ROLES.includes(req.user.role);
+
+    if (!isAuthor && !isPrivileged) {
+      return res.status(403).json({ error: '삭제 권한이 없습니다.' });
+    }
+
+    board.isDeleted = true;
+    await board.save();
+
+    // 수행평가 연동 CalendarEvent도 삭제
+    if (board.category === '수행') {
+      await CalendarEvent.deleteOne({ boardId: board._id, source: 'assessment' });
+    }
+
+    res.json({ message: '글이 삭제되었습니다.' });
+  } catch (error) {
+    res.status(500).json({ error: '글 삭제 오류' });
+  }
+});
+
+// 게시글 순서 변경 (관리자, 반장, 부반장 전용)
+router.put('/reorder', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
+
+  const allowedRoles = ['관리자', '반장', '부반장'];
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ error: '순서 변경 권한이 없습니다.' });
+  }
+
+  const { ids } = req.body;
+  if (!Array.isArray(ids)) {
+    return res.status(400).json({ error: 'ids 배열이 필요합니다.' });
+  }
+
+  try {
+    const bulkOps = ids.map((id, index) => ({
+      updateOne: {
+        filter: { _id: id },
+        update: { $set: { position: index } }
+      }
+    }));
+
+    await Board.bulkWrite(bulkOps);
+    res.status(200).json({ message: '순서가 변경되었습니다.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: '순서 변경 오류' });
+  }
+});
+
+// 비밀번호 변경 (반장, 부반장, 관리자 전용)
 router.patch('/change-pw', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
   const { targetId, newPassword } = req.body;
 
   if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
 
-  if (!['관리자', '반장', '부반장'].includes(req.user.role)) {
+  if (!PRIVILEGED_ROLES.includes(req.user.role)) {
     return res.status(403).json({ error: '비밀번호 수정 권한이 없습니다.' });
   }
 

@@ -16,8 +16,7 @@ router.get('/', async (req, res) => {
 	try {
 		const response = await fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${process.env.NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=N10&SD_SCHUL_CODE=8140270&MLSV_YMD=${date}`);
 		const data = await response.json();
-		console.log(`requesting to url https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${process.env.NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=N10&SD_SCHUL_CODE=8140270&MLSV_YMD=${date}`)
-
+	
 		if (data?.['mealServiceDietInfo']?.[1]?.row) {
 			return res.status(200).json(data['mealServiceDietInfo'][1].row);
 		}

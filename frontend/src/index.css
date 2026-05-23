@@ -1,0 +1,79 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+@layer base {
+
+  html,
+  body {
+    font-family: "Pretendard", sans-serif;
+  }
+}
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  display: block;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+@keyframes orbit {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes anti-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-orbit {
+  animation: orbit 180s linear infinite;
+}
+
+.animate-anti-orbit {
+  animation: anti-orbit 180s linear infinite;
+}
+
+.markdown {
+  & a {
+    @apply text-blue-600 dark:text-blue-400 transition-colors duration-300;
+
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+
+    &:hover {
+      @apply text-blue-500;
+    }
+  }
+
+  & h1 {
+    @apply text-2xl font-bold mb-4;
+  }
+
+  & h2 {
+    @apply text-xl font-bold mb-3;
+  }
+
+  & h3 {
+    @apply text-lg font-bold mb-2;
+  }
+
+  & h4, h5, h6 {
+    @apply text-base font-bold mb-1;
+  }
+}

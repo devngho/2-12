@@ -1,19 +1,24 @@
-import express, { json, urlencoded } from 'express';
-import { connect } from 'mongoose';
-import { schedule } from 'node-cron';
+import express from 'express';
+import mongoose from 'mongoose';
+import cron from 'node-cron';
 import { unlink } from 'fs';
+import { join } from 'path';
 import cookieParser from 'cookie-parser';
+const { json, static: expressStatic, urlencoded } = express;
+const { connect } = mongoose;
 import authRoutes from './routes/authRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
 import boardRoutes from './routes/boardRoutes.js';
 import timeTableRoutes from './routes/timeTableRoutes.js';
 import menuRoutes from './routes/menuRoutes.js';
+import calendarRoutes from './routes/calendarRoutes.js';
 
 const app = express();
 
 app.use(json());
 app.use(urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use('/uploads', expressStatic(join(process.cwd(), 'uploads')));
 
 // 라우터 연결
 app.use('/api/auth', authRoutes);
@@ -21,10 +26,11 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/timetable', timeTableRoutes);
 app.use('/api/menu', menuRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // MongoDB 연결 (class_website라는 이름의 DB 사용)
 connect(process.env.MONGODB_URL ?? "", { dbName: process.env.MONGODB_DB_NAME ?? "prod" })
-    .then(() => console.log('✅ MongoDB 연결 성공'))
+    .then(() => console.log('✅ MongoDB 연결 성공:', process.env.MONGODB_DB_NAME ?? "prod"))
     .catch(err => console.error('❌ MongoDB 연결 실패:', err));
 
 // 6개월 자동 삭제 스케줄러 (매일 자정 실행)

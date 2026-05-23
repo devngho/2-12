@@ -67,9 +67,17 @@ router.get('/', verifyToken, /** @param {import('../auth.js').AuthenticatedReque
                     room: userSelect?.room || null
                 };
             });
-            res.status(200).json(personalizedTimetable);
+
+            res.status(200).json({
+                timetable: personalizedTimetable,
+                selections: userMappings.selects.reduce((acc, sel) => ({ ...acc, [sel.name]: {
+                    subject: sel.subject,
+                    teacher: sel.teacher,
+                    room: sel.room
+                } }), {})
+            });
         } else {
-            res.status(200).json(timetable);
+            res.status(200).json({timetable, selections: {}});
         }
     } catch (error) {
         console.error(error);
