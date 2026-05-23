@@ -129,7 +129,7 @@ router.get('/', verifyToken, /** @param {import('../auth.js').AuthenticatedReque
       query.category = category;
     }
 
-    const boards = await Board.find(query).sort({ createdAt: -1 });
+    const boards = await Board.find(query).sort({ isPinned: -1, position: 1, createdAt: -1 });
     res.status(200).json(boards.map((board) => {
       /** @type {Record<string, any>} */
       const res = {
@@ -141,7 +141,9 @@ router.get('/', verifyToken, /** @param {import('../auth.js').AuthenticatedReque
         dDayAlarm: board.dDayAlarm,
         files: board.files,
         createdAt: board.createdAt,
-        comments: redactAuthorId(board.comments)
+        comments: redactAuthorId(board.comments),
+        isPinned: board.isPinned || false,
+        position: board.position || 0
       }
 
       if (!ANNOYMOUS_CATEGORIES.includes(board.category)) {
@@ -213,9 +215,17 @@ router.patch('/:id', verifyToken, /** @param {import('../auth.js').Authenticated
       editedAt: new Date()
     });
 
-    const { title, content, deadline } = req.body;
+    const { title, content, deadline, isPinned } = req.body;
     if (title !== undefined) board.title = title;
     if (content !== undefined) board.content = content;
+    if (isPinned !== undefined) {
+      const pinAllowedRoles = ['관리자', '반장', '부반장'];
+      if (!pinAllowedRoles.includes(req.user.role)) {
+        return res.status(403).json({ error: '고정 권한이 없습니다.' });
+      }
+      board.isPinned = isPinned;
+      board.position = 0; // Reset position to 0 so it goes to top of new section
+    }
 
     // 수행평가 글의 경우 마감일도 수정 가능
     if (board.category === '수행' && deadline !== undefined) {
@@ -273,6 +283,62 @@ router.delete('/:id', verifyToken, /** @param {import('../auth.js').Authenticate
     res.json({ message: '글이 삭제되었습니다.' });
   } catch (error) {
     res.status(500).json({ error: '글 삭제 오류' });
+  }
+});
+
+// 게시글 순서 변경 (관리자, 반장, 부반장 전용)
+router.put('/reorder', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
+
+  const allowedRoles = ['관리자', '반장', '부반장'];
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ error: '순서 변경 권한이 없습니다.' });
+  }
+
+  const { ids } = req.body;
+  if (!Array.isArray(ids)) {
+    return res.status(400).json({ error: 'ids 배열이 필요합니다.' });
+  }
+
+  try {
+    const bulkOps = ids.map((id, index) => ({
+      updateOne: {
+        filter: { _id: id },
+        update: { $set: { position: index } }
+      }
+    }));
+
+    await Board.bulkWrite(bulkOps);
+    res.status(200).json({ message: '순서가 변경되었습니다.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: '순서 변경 오류' });
+  }
+});
+
+// 비밀번호 변경 (반장, 부반장, 관리자 전용)
+router.patch('/change-pw', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
+  const { targetId, newPassword } = req.body;
+
+  if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
+
+  if (!PRIVILEGED_ROLES.includes(req.user.role)) {
+    return res.status(403).json({ error: '비밀번호 수정 권한이 없습니다.' });
+  }
+
+  try {
+    const targetUser = await User.findById(targetId);
+    if (!targetUser) {
+      return res.status(404).json({ error: '대상 사용자를 찾을 수 없습니다.' });
+    }
+
+    const salt = await genSalt(10);
+    targetUser.password = await hash(newPassword, salt);
+    await targetUser.save();
+
+    res.json({ message: '비밀번호가 변경되었습니다.' });
+  } catch (error) {
+    res.status(500).json({ error: '비밀번호 변경 오류' });
   }
 });
 

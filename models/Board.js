@@ -12,6 +12,8 @@ const boardSchema = new Schema({
   content: { type: String, required: true },
   nickname: { type: String },
   deadline: { type: Date, required: false },
+  isPinned: { type: Boolean, default: false },
+  position: { type: Number, default: 0 },
   dDayAlarm: { type: Number, default: 3 },
   authorId: { type: String, required: true },
   authorName: { type: String, required: true },

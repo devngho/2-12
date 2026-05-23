@@ -392,6 +392,14 @@ function BoardSection({ apiCategory, refreshKey }) {
 
   const isCommunity = apiCategory === '일반';
 
+  const DRAG_AND_PIN_ROLES = ['관리자', '반장', '부반장'];
+  const isAuthorized = user && DRAG_AND_PIN_ROLES.includes(user.role);
+  const isDraggableCategory = apiCategory === '수행' || apiCategory === '공지';
+  const isDragEnabled = isAuthorized && isDraggableCategory;
+
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+
   const fetchPosts = async () => {
     setLoading(true);
     setError('');
@@ -424,6 +432,69 @@ function BoardSection({ apiCategory, refreshKey }) {
     return post.authorId === user.id || PRIVILEGED_ROLES.includes(user.role);
   };
 
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null) return;
+    const draggedPost = posts[draggedIndex];
+    const targetPost = posts[index];
+    if (!draggedPost || !targetPost) return;
+    
+    // Only allow drag over if both are pinned or both are unpinned
+    if (draggedPost.isPinned === targetPost.isPinned) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDrop = async (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null) return;
+    const draggedPost = posts[draggedIndex];
+    const targetPost = posts[index];
+    
+    if (!draggedPost || !targetPost || draggedPost.isPinned !== targetPost.isPinned) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const newPosts = [...posts];
+    const [removed] = newPosts.splice(draggedIndex, 1);
+    newPosts.splice(index, 0, removed);
+
+    setPosts(newPosts);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+
+    try {
+      const ids = newPosts.map(p => p.id);
+      await api.put('/boards/reorder', { ids });
+    } catch (err) {
+      console.error(err);
+      alert('순서 변경에 실패했습니다.');
+      fetchPosts();
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleTogglePin = async (post) => {
+    try {
+      const nextPinned = !post.isPinned;
+      await api.patch(`/boards/${post.id}`, { isPinned: nextPinned });
+      fetchPosts();
+    } catch (err) {
+      alert(err.response?.data?.error || '고정 상태 변경에 실패했습니다.');
+    }
+  };
+
   if (loading) return (
     <div className="text-center py-10">
       <span className="loading loading-spinner loading-lg" />
@@ -436,20 +507,58 @@ function BoardSection({ apiCategory, refreshKey }) {
 
   return (
     <div className="flex flex-col space-y-3">
-      {posts.map(post => {
+      {posts.map((post, index) => {
         const attachments = Array.isArray(post.files) && post.files.length > 0
           ? post.files
           : post.fileUrl
             ? [{ fileName: post.fileName, filePath: post.fileUrl }]
             : [];
 
+        const isDragging = draggedIndex === index;
+        const isDragOver = dragOverIndex === index && draggedIndex !== index;
+
         return (
-        <div key={post.id} className="collapse collapse-arrow bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow">
+        <div 
+          key={post.id} 
+          draggable={isDragEnabled}
+          onDragStart={(e) => handleDragStart(e, index)}
+          onDragOver={(e) => handleDragOver(e, index)}
+          onDrop={(e) => handleDrop(e, index)}
+          onDragEnd={handleDragEnd}
+          className={`collapse collapse-arrow bg-base-100 border transition-all duration-200 ${
+            isDragging ? 'opacity-40 border-dashed border-neutral shadow-inner' : 'border-base-200'
+          } ${
+            isDragOver ? 'border-primary bg-primary/5 scale-[1.01]' : 'hover:shadow-md'
+          }`}
+        >
           <input type="checkbox" />
           {/* 닫힌 상태 — 제목만 표시 */}
           <div className="collapse-title pr-10">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
+                {isDragEnabled && (
+                  <div 
+                    className="cursor-grab active:cursor-grabbing text-base-content/30 hover:text-base-content/60 shrink-0 flex items-center justify-center w-5 h-5"
+                    title="드래그하여 순서 변경"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+                    </svg>
+                  </div>
+                )}
+                {post.isPinned && (
+                  <div 
+                    className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-red-500 text-white font-bold text-xs shrink-0 shadow-sm" 
+                    title="고정됨"
+                  >
+                    !
+                  </div>
+                )}
                 <span className="font-semibold text-sm truncate">{post.title}</span>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -500,13 +609,23 @@ function BoardSection({ apiCategory, refreshKey }) {
                   </div>
                 )}
 
-                {/* 수정/삭제 버튼 */}
-                {canModify(post) && (
-                  <div className="flex gap-2 mt-3">
-                    <button className="btn btn-outline btn-xs" onClick={(e) => { e.stopPropagation(); setEditingId(post.id); }}>수정</button>
-                    <button className="btn btn-outline btn-error btn-xs" onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}>삭제</button>
-                  </div>
-                )}
+                {/* 수정/삭제/고정 버튼 */}
+                <div className="flex gap-2 mt-3">
+                  {canModify(post) && (
+                    <>
+                      <button className="btn btn-outline btn-xs" onClick={(e) => { e.stopPropagation(); setEditingId(post.id); }}>수정</button>
+                      <button className="btn btn-outline btn-error btn-xs" onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}>삭제</button>
+                    </>
+                  )}
+                  {isDragEnabled && (
+                    <button 
+                      className={`btn btn-xs ${post.isPinned ? 'btn-warning text-warning-content' : 'btn-outline'}`}
+                      onClick={(e) => { e.stopPropagation(); handleTogglePin(post); }}
+                    >
+                      {post.isPinned ? '고정 해제' : '상단 고정'}
+                    </button>
+                  )}
+                </div>
 
                 {/* 커뮤니티 댓글 */}
                 {isCommunity && <CommentSection boardId={post.id} />}
