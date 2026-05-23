@@ -163,7 +163,7 @@ export default function Timetable() {
           </div>
 
           <button
-            className="btn btn-neutral w-full mt-8 rounded-xl font-bold text-lg" // Neutral dark button, consistent with minimal design
+            className="btn w-full mt-8 rounded-xl font-bold text-lg" // Neutral dark button, consistent with minimal design
             onClick={handleSaveSelections}
             disabled={!selections['탐구A'] || !selections['탐구B'] || !selections['탐구C'] || loading}
           >
@@ -205,11 +205,11 @@ export default function Timetable() {
                 ) : (
                   timetable.map((row, rowIdx) => (
                     <tr key={rowIdx} className="hover:bg-base-50 transition-colors border-b last:border-b-0 border-base-200/30">
-                      <td className="py-4 font-bold text-lg text-neutral/50 dark:text-white/50 bg-base-100/30 border-r border-base-200/30">
+                      <td className="py-4 font-bold text-lg text-neutral/50 dark:text-white/50 bg-base-200 border-r border-base-200/30 dark:bg-base-200">
                         {rowIdx + 1}
                       </td>
                       {row.map((cell, colIdx) => (
-                        <td key={colIdx} className="py-4 font-bold text-[17px] tracking-tight bg-white dark:bg-base-200 border-r last:border-r-0 border-base-200 dark:border-base-100 relative">
+                        <td key={colIdx} className="py-4 font-bold text-[17px] tracking-tight bg-white dark:bg-base-100 border-r last:border-r-0 border-base-200 dark:border-base-100 relative">
                           {cell.subject ? (
                             <div className="flex flex-col items-center">
                               <span className="text-blue-600 mb-1">{cell.subject}</span>
@@ -229,7 +229,7 @@ export default function Timetable() {
               </tbody>
             </table>
           </div>
-          <button onClick={() => setShowSetup(true)} className="btn btn-sm btn-outline btn-neutral mt-2">과목 재설정</button>
+          <button onClick={() => setShowSetup(true)} className="btn btn-sm btn-outline mt-2">과목 재설정</button>
         </div>
       )}
     </div>
