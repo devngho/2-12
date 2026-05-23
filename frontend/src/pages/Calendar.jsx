@@ -20,6 +20,7 @@ export default function Calendar() {
   const [inputContent, setInputContent] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [detailEvent, setDetailEvent] = useState(null);
+  const [error, setError] = useState(null);
 
   const canManage = user && PRIVILEGED_ROLES.includes(user.role);
 
@@ -28,10 +29,17 @@ export default function Calendar() {
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/calendar', { params: { start: currentDates[0], end: currentDates[currentDates.length-1] } });
-      setEvents(data);
+      const { data } = await api.get('/calendar', { params: { start: currentDates[0], end: currentDates[currentDates.length - 1] } });
+      setEvents(data.events || []);
+      if (data.error) {
+        console.error('일정 조회 오류:', data.error);
+        setError(data.error);
+      } else {
+        setError(null);
+      }
     } catch {
       setEvents([]);
+      setError('일정 조회에 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -150,65 +158,76 @@ export default function Calendar() {
   };
 
   return (
-    <div className="flex-grow w-full max-w-4xl mx-auto flex flex-col pt-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="flex-grow w-full max-w-4xl mx-auto flex flex-col pt-6">
+      <div className="flex justify-between gap-4">
         <h2 className="select-none text-2xl font-bold">캘린더</h2>
-        <div className="flex space-x-2">
+
+        <div className="grow"></div>
+
+        <div className="flex space-x-2 min-w-56 justify-between">
           <button className="btn btn-sm btn-ghost" onClick={handlePrevMonth}>
             &lt;
           </button>
-          <span className="font-semibold px-2 flex items-center">{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월</span>
+
+          <span className="font-semibold px-2 flex items-center">{loading ? (
+            <span className="loading loading-spinner" />
+          ) : null}{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월</span>
           <button className="btn btn-sm btn-ghost" onClick={handleNextMonth}>
             &gt;
           </button>
         </div>
       </div>
 
-      <div className="card bg-base-100 shadow-sm border border-base-200">
-        <div className="card-body p-2 sm:p-4">
+      <div className="h-8">
+        {error && (
+          <span className="text-error text-sm text-ellipsis whitespace-nowrap overflow-hidden">
+            {error}
+          </span>
+        )}
+      </div>
+
+      <div className="card bg-base-100 shadow-sm border border-base-200 -mx-4 sm:mx-0">
+        <div className="card-body p-0.5 sm:p-2">
           <div className="grid grid-cols-7 mb-2 text-center font-bold text-sm">
             {days.map(day => <div key={day} className={day === '일' ? 'text-error' : day === '토' ? 'text-info' : ''}>{day}</div>)}
           </div>
-          {loading ? (
-            <div className="text-center py-10"><span className="loading loading-spinner loading-lg" /></div>
-          ) : (
-            <div className="grid grid-cols-7 gap-1 sm:gap-2 auto-rows-fr">
-              {currentDates.map((date, idx) => {
-                const dayEvents = getEventsForDate(date);
-                const isCurrentMonth = date.getMonth() === currentDate.getMonth();
 
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => openModal(date)}
-                    className={`min-h-24 sm:min-h-28 flex flex-col p-2 border dark:border-base-300 rounded-md cursor-pointer hover:bg-base-200 transition-colors ${!isCurrentMonth ? 'opacity-30' : ''}`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className={`text-xs sm:text-sm font-medium ${date.getDay() === 0 ? 'text-error' : date.getDay() === 6 ? 'text-info' : ''}`}>
-                        {date.getDate()}
-                      </div>
-                      {dayEvents.length > 0 && (
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 auto-rows-fr">
+            {currentDates.map((date, idx) => {
+              const dayEvents = getEventsForDate(date);
+              const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+
+              return (
+                <div
+                  key={idx}
+                  onClick={() => openModal(date)}
+                  className={`min-h-24 sm:min-h-28 flex flex-col p-2 border dark:border-base-300 rounded-md cursor-pointer hover:bg-base-200 transition-colors ${!isCurrentMonth ? 'opacity-30' : ''}`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className={`text-xs sm:text-sm font-medium ${(date.getDay() === 0 || dayEvents.some(e => e.isHoliday)) ? 'text-error' : date.getDay() === 6 ? 'text-info' : ''}`}>
+                      {date.getDate()}
+                    </div>
+                    {/* {dayEvents.length > 0 && (
                         <div className="text-xs sm:text-sm font-medium text-gray-400">
                           {dayEvents.length}
                         </div>
-                      )}
-                    </div>
-                    <div className="mt-1 flex flex-col gap-1 flex-1 overflow-hidden p-1">
-                      {dayEvents.slice(0, 3).map(event => (
-                        <div
-                          key={event._id}
-                          onClick={(e) => { e.stopPropagation(); setDetailEvent({ ...event, dateKey: date }); }}
-                          className={`text-[10px] sm:text-xs p-1 rounded truncate hover:opacity-80 bg-white text-black border border-gray-200 shadow-sm hover:bg-gray-50`}
-                        >
-                          {event.title}
-                        </div>
-                      ))}
-                    </div>
+                      )} */}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  <div className="mt-1 flex flex-col gap-1 flex-1 overflow-hidden">
+                    {dayEvents.slice(0, 3).map(event => (
+                      <div
+                        key={event._id}
+                        onClick={(e) => { e.stopPropagation(); setDetailEvent({ ...event, dateKey: date }); }}
+                        className={`text-[0.6rem] sm:text-xs p-0.5 sm:p-1 rounded line-clamp-2 hover:opacity-80 bg-white text-black border border-gray-200 shadow-sm hover:bg-gray-50`}
+                      >
+                        {event.title}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
