@@ -201,10 +201,10 @@ export default function Calendar() {
                 <div
                   key={idx}
                   onClick={() => openModal(date)}
-                  className={`min-h-24 sm:min-h-28 flex flex-col p-2 border dark:border-base-300 rounded-md cursor-pointer hover:bg-base-200 transition-colors ${!isCurrentMonth ? 'opacity-30' : ''}`}
+                  className={`min-h-24 sm:min-h-28 flex flex-col py-2 border dark:border-base-300 rounded-md cursor-pointer hover:bg-base-200 transition-colors ${!isCurrentMonth ? 'opacity-30' : ''}`}
                 >
                   <div className="flex justify-between items-start">
-                    <div className={`text-xs sm:text-sm font-medium ${(date.getDay() === 0 || dayEvents.some(e => e.isHoliday)) ? 'text-error' : date.getDay() === 6 ? 'text-info' : ''}`}>
+                    <div className={`mx-2 text-xs sm:text-sm font-medium ${(date.getDay() === 0 || dayEvents.some(e => e.isHoliday)) ? 'text-error' : date.getDay() === 6 ? 'text-info' : ''}`}>
                       {date.getDate()}
                     </div>
                     {/* {dayEvents.length > 0 && (
@@ -213,12 +213,12 @@ export default function Calendar() {
                         </div>
                       )} */}
                   </div>
-                  <div className="mt-1 flex flex-col gap-1 flex-1 overflow-hidden">
+                  <div className="mt-1 mx-0.5 sm:mx-2 flex flex-col gap-1 flex-1 overflow-hidden">
                     {dayEvents.slice(0, 3).map(event => (
                       <div
                         key={event._id}
                         onClick={(e) => { e.stopPropagation(); setDetailEvent({ ...event, dateKey: date }); }}
-                        className={`text-[0.6rem] sm:text-xs p-0.5 sm:p-1 rounded line-clamp-2 hover:opacity-80 bg-white text-black border border-gray-200 shadow-sm hover:bg-gray-50`}
+                        className={`text-[10px] sm:text-xs p-0.5 sm:p-1 rounded line-clamp-2 hover:opacity-80 bg-white text-black border border-gray-200 shadow-sm hover:bg-gray-50`}
                       >
                         {event.title}
                       </div>
