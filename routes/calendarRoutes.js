@@ -62,7 +62,7 @@ const cache = {};
 /**
  * @param {number} year
  * @param {number} month
- * @return {Promise<any>}
+ * @return {Promise<Array<{ title: string, date: number, content: string, source: string, isHoliday: boolean }>>}
  */
 async function getSchoolSchedule(year, month) {
   const response = await fetch(`https://open.neis.go.kr/hub/SchoolSchedule?KEY=${process.env.NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=N10&SD_SCHUL_CODE=8140270&AA_FROM_YMD=${year}${month.toString().padStart(2, '0')}01&AA_TO_YMD=${year}${month.toString().padStart(2, '0')}${new Date(year, month, 0).getDate()}`);
@@ -122,7 +122,11 @@ router.get('/', verifyToken, async (req, res) => {
     const schoolSchedule = (async () => {
       const schedulePromises = Array.from(yearMonthSet).map(ym => {
         const [year, month] = ym.split('-').map(Number);
-        return getSchoolSchedule(year, month);
+        return getSchoolSchedule(year, month).then(events => {
+          // filter by start and end date
+
+          return events.filter(event => event.date >= startDate.getTime() && event.date <= endDate.getTime());
+        });
       });
 
       return (await Promise.all(schedulePromises)).flat();
