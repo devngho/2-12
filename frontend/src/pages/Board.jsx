@@ -534,8 +534,6 @@ function BoardSection({ apiCategory, refreshKey }) {
                 <div className="flex items-center gap-2 min-w-0">
                   {isDragEnabled && (
                     <div
-                      draggable={true}
-                      onDragStart={(e) => handleDragStart(e, index)}
                       className="cursor-grab active:cursor-grabbing text-base-content/30 hover:text-base-content/60 shrink-0 flex items-center justify-center w-5 h-5"
                       title="드래그하여 순서 변경"
                       onMouseDown={(e) => e.stopPropagation()}
@@ -544,7 +542,10 @@ function BoardSection({ apiCategory, refreshKey }) {
                         e.preventDefault();
                       }}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                      <svg
+                        draggable={true}
+                        onDragStart={(e) => handleDragStart(e, index)}
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
                       </svg>
                     </div>
