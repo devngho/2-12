@@ -392,7 +392,7 @@ function BoardSection({ apiCategory, refreshKey }) {
 
   const isCommunity = apiCategory === '일반';
 
-  const DRAG_AND_PIN_ROLES = ['관리자', '반장', '부반장'];
+  const DRAG_AND_PIN_ROLES = ['관리자', '반장', '부반장', '선생님'];
   const isAuthorized = user && DRAG_AND_PIN_ROLES.includes(user.role);
   const isDraggableCategory = apiCategory === '수행' || apiCategory === '공지';
   const isDragEnabled = isAuthorized && isDraggableCategory;
@@ -443,7 +443,7 @@ function BoardSection({ apiCategory, refreshKey }) {
     const draggedPost = posts[draggedIndex];
     const targetPost = posts[index];
     if (!draggedPost || !targetPost) return;
-    
+
     // Only allow drag over if both are pinned or both are unpinned
     if (draggedPost.isPinned === targetPost.isPinned) {
       setDragOverIndex(index);
@@ -455,7 +455,7 @@ function BoardSection({ apiCategory, refreshKey }) {
     if (draggedIndex === null) return;
     const draggedPost = posts[draggedIndex];
     const targetPost = posts[index];
-    
+
     if (!draggedPost || !targetPost || draggedPost.isPinned !== targetPost.isPinned) {
       setDraggedIndex(null);
       setDragOverIndex(null);
@@ -518,121 +518,119 @@ function BoardSection({ apiCategory, refreshKey }) {
         const isDragOver = dragOverIndex === index && draggedIndex !== index;
 
         return (
-        <div 
-          key={post.id} 
-          draggable={isDragEnabled}
-          onDragStart={(e) => handleDragStart(e, index)}
-          onDragOver={(e) => handleDragOver(e, index)}
-          onDrop={(e) => handleDrop(e, index)}
-          onDragEnd={handleDragEnd}
-          className={`collapse collapse-arrow bg-base-100 border transition-all duration-200 ${
-            isDragging ? 'opacity-40 border-dashed border-neutral shadow-inner' : 'border-base-200'
-          } ${
-            isDragOver ? 'border-primary bg-primary/5 scale-[1.01]' : 'hover:shadow-md'
-          }`}
-        >
-          <input type="checkbox" />
-          {/* 닫힌 상태 — 제목만 표시 */}
-          <div className="collapse-title pr-10">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                {isDragEnabled && (
-                  <div 
-                    className="cursor-grab active:cursor-grabbing text-base-content/30 hover:text-base-content/60 shrink-0 flex items-center justify-center w-5 h-5"
-                    title="드래그하여 순서 변경"
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                    }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
-                    </svg>
-                  </div>
-                )}
-                {post.isPinned && (
-                  <div 
-                    className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-red-500 text-white font-bold text-xs shrink-0 shadow-sm" 
-                    title="고정됨"
-                  >
-                    !
-                  </div>
-                )}
-                <span className="font-semibold text-sm truncate">{post.title}</span>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-base-content/50">{post.authorName ?? post.nickname}</span>
-                <span className="text-xs text-base-content/40">
-                  {new Date(post.createdAt).toLocaleDateString()}
-                </span>
+          <div
+            key={post.id}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDrop={(e) => handleDrop(e, index)}
+            onDragEnd={handleDragEnd}
+            className={`collapse collapse-arrow bg-base-100 border transition-all duration-200 ${isDragging ? 'opacity-40 border-dashed border-neutral shadow-inner' : 'border-base-200'
+              } ${isDragOver ? 'border-primary bg-primary/5 scale-[1.01]' : 'hover:shadow-md'
+              }`}
+          >
+            <input type="checkbox" />
+            {/* 닫힌 상태 — 제목만 표시 */}
+            <div className="collapse-title pr-10">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  {isDragEnabled && (
+                    <div
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      className="cursor-grab active:cursor-grabbing text-base-content/30 hover:text-base-content/60 shrink-0 flex items-center justify-center w-5 h-5"
+                      title="드래그하여 순서 변경"
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+                      </svg>
+                    </div>
+                  )}
+                  {post.isPinned && (
+                    <div
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-red-500 text-white font-bold text-xs shrink-0 shadow-sm"
+                      title="고정됨"
+                    >
+                      !
+                    </div>
+                  )}
+                  <span className="font-semibold text-sm truncate">{post.title}</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-base-content/50">{post.authorName ?? post.nickname}</span>
+                  <span className="text-xs text-base-content/40">
+                    {new Date(post.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* 펼친 상태 — 내용 전체 */}
-          <div className="collapse-content">
-            {editingId === post.id ? (
-              <EditForm
-                post={post}
-                onCancel={() => setEditingId(null)}
-                onSuccess={() => { setEditingId(null); fetchPosts(); }}
-              />
-            ) : (
-              <>
-                <div className="whitespace-pre-wrap text-sm text-base-content/80 markdown"><Markdown>{post.content}</Markdown></div>
+            {/* 펼친 상태 — 내용 전체 */}
+            <div className="collapse-content">
+              {editingId === post.id ? (
+                <EditForm
+                  post={post}
+                  onCancel={() => setEditingId(null)}
+                  onSuccess={() => { setEditingId(null); fetchPosts(); }}
+                />
+              ) : (
+                <>
+                  <div className="whitespace-pre-wrap text-sm text-base-content/80 markdown"><Markdown>{post.content}</Markdown></div>
 
-                {/* 마감일 배지 */}
-                {post.deadline && (
-                  <div className="mt-2 inline-flex items-center gap-1 text-xs bg-neutral text-neutral-content px-2 py-1 rounded w-fit">
-                    <span>📅</span>
-                    <span>마감: {new Date(post.deadline).toLocaleDateString()}</span>
-                    {post.dDayAlarm && <span>(D-{post.dDayAlarm} 알림)</span>}
-                  </div>
-                )}
+                  {/* 마감일 배지 */}
+                  {post.deadline && (
+                    <div className="mt-2 inline-flex items-center gap-1 text-xs bg-neutral text-neutral-content px-2 py-1 rounded w-fit">
+                      <span>📅</span>
+                      <span>마감: {new Date(post.deadline).toLocaleDateString()}</span>
+                      {post.dDayAlarm && <span>(D-{post.dDayAlarm} 알림)</span>}
+                    </div>
+                  )}
 
-                {/* 파일 첨부 */}
-                {attachments.length > 0 && (
-                  <div className="mt-2 flex flex-col items-start gap-1">
-                    {attachments.map((attachment, index) => (
-                      <a
-                        key={`${attachment.filePath || attachment.fileName}-${index}`}
-                        href={getAttachmentHref(attachment.filePath)}
-                        download={attachment.fileName || undefined}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-primary underline w-fit"
+                  {/* 파일 첨부 */}
+                  {attachments.length > 0 && (
+                    <div className="mt-2 flex flex-col items-start gap-1">
+                      {attachments.map((attachment, index) => (
+                        <a
+                          key={`${attachment.filePath || attachment.fileName}-${index}`}
+                          href={getAttachmentHref(attachment.filePath)}
+                          download={attachment.fileName || undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary underline w-fit"
+                        >
+                          📎 {attachment.fileName || `첨부파일 ${index + 1}`}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 수정/삭제/고정 버튼 */}
+                  <div className="flex gap-2 mt-3">
+                    {canModify(post) && (
+                      <>
+                        <button className="btn btn-outline btn-xs" onClick={(e) => { e.stopPropagation(); setEditingId(post.id); }}>수정</button>
+                        <button className="btn btn-outline btn-error btn-xs" onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}>삭제</button>
+                      </>
+                    )}
+                    {isDragEnabled && (
+                      <button
+                        className={`btn btn-xs ${post.isPinned ? 'btn-warning text-warning-content' : 'btn-outline'}`}
+                        onClick={(e) => { e.stopPropagation(); handleTogglePin(post); }}
                       >
-                        📎 {attachment.fileName || `첨부파일 ${index + 1}`}
-                      </a>
-                    ))}
+                        {post.isPinned ? '고정 해제' : '상단 고정'}
+                      </button>
+                    )}
                   </div>
-                )}
 
-                {/* 수정/삭제/고정 버튼 */}
-                <div className="flex gap-2 mt-3">
-                  {canModify(post) && (
-                    <>
-                      <button className="btn btn-outline btn-xs" onClick={(e) => { e.stopPropagation(); setEditingId(post.id); }}>수정</button>
-                      <button className="btn btn-outline btn-error btn-xs" onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}>삭제</button>
-                    </>
-                  )}
-                  {isDragEnabled && (
-                    <button 
-                      className={`btn btn-xs ${post.isPinned ? 'btn-warning text-warning-content' : 'btn-outline'}`}
-                      onClick={(e) => { e.stopPropagation(); handleTogglePin(post); }}
-                    >
-                      {post.isPinned ? '고정 해제' : '상단 고정'}
-                    </button>
-                  )}
-                </div>
-
-                {/* 커뮤니티 댓글 */}
-                {isCommunity && <CommentSection boardId={post.id} />}
-              </>
-            )}
+                  {/* 커뮤니티 댓글 */}
+                  {isCommunity && <CommentSection boardId={post.id} />}
+                </>
+              )}
+            </div>
           </div>
-        </div>
         );
       })}
     </div>
