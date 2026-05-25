@@ -500,7 +500,11 @@ function BoardSection({ apiCategory, refreshKey }) {
     }
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e) => {
+    // 모든 카드의 draggable을 초기화
+    document.querySelectorAll('.collapse[draggable="true"]').forEach(el => {
+      el.draggable = false;
+    });
     setDraggedIndex(null);
     setDragOverIndex(null);
   };
@@ -540,11 +544,6 @@ function BoardSection({ apiCategory, refreshKey }) {
         return (
           <div
             key={post.id}
-            onDragStart={(e) => {
-              if (!e.target.closest('[data-drag-handle="true"]')) {
-                e.preventDefault();
-              }
-            }}
             onDragOver={(e) => handleDragOver(e, index)}
             onDrop={(e) => handleDrop(e, index)}
             onDragEnd={handleDragEnd}
@@ -571,15 +570,23 @@ function BoardSection({ apiCategory, refreshKey }) {
                   {isDragEnabled && (
                     <div
                       data-drag-handle="true"
-                      className="cursor-grab active:cursor-grabbing text-base-content/30 hover:text-base-content/60 shrink-0 flex items-center justify-center w-8 h-8"
-                      draggable={true}
-                      onDragStart={(e) => handleDragStart(e, index)}
-                      title="드래그하여 순서 변경"
-                      onMouseDown={(e) => e.stopPropagation()}
+                      className="cursor-grab active:cursor-grabbing ..."
+                      draggable={false}           // ← 기본은 false
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        // 부모 카드(collapse div)를 draggable로 활성화
+                        const card = e.currentTarget.closest('.collapse');
+                        if (card) card.draggable = true;
+                      }}
+                      onDragStart={(e) => {
+                        e.stopPropagation();
+                        handleDragStart(e, index);
+                      }}
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
                       }}
+                      title="드래그하여 순서 변경"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
