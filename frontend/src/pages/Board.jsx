@@ -381,7 +381,7 @@ function EditForm({ post, onCancel, onSuccess }) {
 }
 
 // ────────────────────────────────────────────────
-// 카테고리별 게시글 목록 (BoardSection)
+// 카테고리별 게시글 목록
 // ────────────────────────────────────────────────
 function BoardSection({ apiCategory, refreshKey }) {
   const { user } = useAuth();
@@ -399,9 +399,6 @@ function BoardSection({ apiCategory, refreshKey }) {
 
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
-
-  // 🔥 [핵심 추가] 아이콘에 마우스가 올라갔을 때만 드래그를 허용하기 위한 상태
-  const [activeDragHandle, setActiveDragHandle] = useState(null);
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -435,10 +432,29 @@ function BoardSection({ apiCategory, refreshKey }) {
     return post.authorId === user.id || PRIVILEGED_ROLES.includes(user.role);
   };
 
-  // 공통 순서 변경 로직 (PC & 모바일)
-  const performReorder = async (fromIndex, toIndex) => {
-    const draggedPost = posts[fromIndex];
-    const targetPost = posts[toIndex];
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null) return;
+    const draggedPost = posts[draggedIndex];
+    const targetPost = posts[index];
+    if (!draggedPost || !targetPost) return;
+
+    // Only allow drag over if both are pinned or both are unpinned
+    if (draggedPost.isPinned === targetPost.isPinned) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDrop = async (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null) return;
+    const draggedPost = posts[draggedIndex];
+    const targetPost = posts[index];
 
     if (!draggedPost || !targetPost || draggedPost.isPinned !== targetPost.isPinned) {
       setDraggedIndex(null);
@@ -447,13 +463,12 @@ function BoardSection({ apiCategory, refreshKey }) {
     }
 
     const newPosts = [...posts];
-    const [removed] = newPosts.splice(fromIndex, 1);
-    newPosts.splice(toIndex, 0, removed);
+    const [removed] = newPosts.splice(draggedIndex, 1);
+    newPosts.splice(index, 0, removed);
 
     setPosts(newPosts);
     setDraggedIndex(null);
     setDragOverIndex(null);
-    setActiveDragHandle(null);
 
     try {
       const ids = newPosts.map(p => p.id);
@@ -465,69 +480,9 @@ function BoardSection({ apiCategory, refreshKey }) {
     }
   };
 
-  // === PC 환경 드래그 이벤트 ===
-  const handleDragStart = (e, index) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e, index) => {
-    e.preventDefault();
-    if (draggedIndex === null) return;
-    const draggedPost = posts[draggedIndex];
-    const targetPost = posts[index];
-
-    if (draggedPost && targetPost && draggedPost.isPinned === targetPost.isPinned) {
-      setDragOverIndex(index);
-    }
-  };
-
-  const handleDrop = (e, index) => {
-    e.preventDefault();
-    if (draggedIndex === null) return;
-    performReorder(draggedIndex, index);
-  };
-
   const handleDragEnd = () => {
     setDraggedIndex(null);
     setDragOverIndex(null);
-    setActiveDragHandle(null);
-  };
-
-  const handleTouchStart = (e, index) => {
-    setDraggedIndex(index);
-    if (document.body) document.body.style.overflow = 'hidden';
-  };
-
-  const handleTouchMove = (e) => {
-    if (draggedIndex === null) return;
-
-    const touch = e.touches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    const targetItem = element?.closest('[data-index]');
-
-    if (targetItem) {
-      const targetIndex = Number(targetItem.dataset.index);
-      const draggedPost = posts[draggedIndex];
-      const targetPost = posts[targetIndex];
-
-      if (draggedPost && targetPost && draggedPost.isPinned === targetPost.isPinned) {
-        if (targetIndex !== dragOverIndex) {
-          setDragOverIndex(targetIndex);
-        }
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (document.body) document.body.style.overflow = '';
-
-    if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
-      performReorder(draggedIndex, dragOverIndex);
-    } else {
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-    }
   };
 
   const handleTogglePin = async (post) => {
@@ -551,12 +506,7 @@ function BoardSection({ apiCategory, refreshKey }) {
   );
 
   return (
-    <div
-      className="flex flex-col space-y-3"
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
-    >
+    <div className="flex flex-col space-y-3">
       {posts.map((post, index) => {
         const attachments = Array.isArray(post.files) && post.files.length > 0
           ? post.files
@@ -570,41 +520,41 @@ function BoardSection({ apiCategory, refreshKey }) {
         return (
           <div
             key={post.id}
-            data-index={index}
-            draggable={isDragEnabled && activeDragHandle === index}
-            onDragStart={(e) => handleDragStart(e, index)}
             onDragOver={(e) => handleDragOver(e, index)}
             onDrop={(e) => handleDrop(e, index)}
             onDragEnd={handleDragEnd}
             className={`collapse collapse-arrow bg-base-100 border transition-all duration-200 ${isDragging ? 'opacity-40 border-dashed border-neutral shadow-inner' : 'border-base-200'
-              } ${isDragOver ? 'border-primary bg-primary/5 scale-[1.01]' : 'hover:shadow-md'}`}
+              } ${isDragOver ? 'border-primary bg-primary/5 scale-[1.01]' : 'hover:shadow-md'
+              }`}
           >
             <input type="checkbox" />
-
+            {/* 닫힌 상태 — 제목만 표시 */}
             <div className="collapse-title pr-10">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   {isDragEnabled && (
                     <div
                       className="cursor-grab active:cursor-grabbing text-base-content/30 hover:text-base-content/60 shrink-0 flex items-center justify-center w-5 h-5"
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, index)}
                       title="드래그하여 순서 변경"
-                      style={{ touchAction: 'none' }}
-                      onMouseEnter={() => setActiveDragHandle(index)}
-                      onMouseLeave={() => setActiveDragHandle(null)}
-                      onMouseDown={() => setActiveDragHandle(index)}
-                      onTouchStart={(e) => handleTouchStart(e, index)}
+                      onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
                       }}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 pointer-events-none">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
                       </svg>
                     </div>
                   )}
                   {post.isPinned && (
-                    <div className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-red-500 text-white font-bold text-xs shrink-0 shadow-sm" title="고정됨">
+                    <div
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-red-500 text-white font-bold text-xs shrink-0 shadow-sm"
+                      title="고정됨"
+                    >
                       !
                     </div>
                   )}
@@ -631,6 +581,7 @@ function BoardSection({ apiCategory, refreshKey }) {
                 <>
                   <div className="whitespace-pre-wrap text-sm text-base-content/80 markdown"><Markdown>{post.content}</Markdown></div>
 
+                  {/* 마감일 배지 */}
                   {post.deadline && (
                     <div className="mt-2 inline-flex items-center gap-1 text-xs bg-neutral text-neutral-content px-2 py-1 rounded w-fit">
                       <span>📅</span>
@@ -639,6 +590,7 @@ function BoardSection({ apiCategory, refreshKey }) {
                     </div>
                   )}
 
+                  {/* 파일 첨부 */}
                   {attachments.length > 0 && (
                     <div className="mt-2 flex flex-col items-start gap-1">
                       {attachments.map((attachment, index) => (
@@ -656,6 +608,7 @@ function BoardSection({ apiCategory, refreshKey }) {
                     </div>
                   )}
 
+                  {/* 수정/삭제/고정 버튼 */}
                   <div className="flex gap-2 mt-3">
                     {canModify(post) && (
                       <>
@@ -673,6 +626,7 @@ function BoardSection({ apiCategory, refreshKey }) {
                     )}
                   </div>
 
+                  {/* 커뮤니티 댓글 */}
                   {isCommunity && <CommentSection boardId={post.id} />}
                 </>
               )}
