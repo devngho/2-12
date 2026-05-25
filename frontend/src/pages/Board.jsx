@@ -441,28 +441,38 @@ function BoardSection({ apiCategory, refreshKey }) {
       return next;
     });
   };
+  const BOARD_DRAG_TYPE = 'application/x-board-post';
+
+  const isBoardDrag = (e) => {
+    return Array.from(e.dataTransfer.types).includes(BOARD_DRAG_TYPE);
+  };
 
   const handleDragStart = (e, index) => {
+    e.stopPropagation();
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData(BOARD_DRAG_TYPE, String(posts[index].id));
   };
 
   const handleDragOver = (e, index) => {
-    e.preventDefault();
-    if (draggedIndex === null) return;
+    if (draggedIndex === null || !isBoardDrag(e)) return;
+
     const draggedPost = posts[draggedIndex];
     const targetPost = posts[index];
     if (!draggedPost || !targetPost) return;
 
-    // Only allow drag over if both are pinned or both are unpinned
     if (draggedPost.isPinned === targetPost.isPinned) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
       setDragOverIndex(index);
     }
   };
 
   const handleDrop = async (e, index) => {
+    if (draggedIndex === null || !isBoardDrag(e)) return;
+
     e.preventDefault();
-    if (draggedIndex === null) return;
+
     const draggedPost = posts[draggedIndex];
     const targetPost = posts[index];
 
@@ -530,6 +540,11 @@ function BoardSection({ apiCategory, refreshKey }) {
         return (
           <div
             key={post.id}
+            onDragStart={(e) => {
+              if (!e.target.closest('[data-drag-handle="true"]')) {
+                e.preventDefault();
+              }
+            }}
             onDragOver={(e) => handleDragOver(e, index)}
             onDrop={(e) => handleDrop(e, index)}
             onDragEnd={handleDragEnd}
@@ -555,12 +570,10 @@ function BoardSection({ apiCategory, refreshKey }) {
                 <div className="flex items-center gap-2 min-w-0">
                   {isDragEnabled && (
                     <div
-                      className="cursor-grab active:cursor-grabbing text-base-content/30 hover:text-base-content/60 shrink-0 flex items-center justify-center w-5 h-5"
+                      data-drag-handle="true"
+                      className="cursor-grab active:cursor-grabbing text-base-content/30 hover:text-base-content/60 shrink-0 flex items-center justify-center w-8 h-8"
                       draggable={true}
-                      onDragStart={(e) => {
-                        e.stopPropagation();
-                        handleDragStart(e, index);
-                      }}
+                      onDragStart={(e) => handleDragStart(e, index)}
                       title="드래그하여 순서 변경"
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
@@ -569,7 +582,13 @@ function BoardSection({ apiCategory, refreshKey }) {
                       }}
                     >
                       <svg
-                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2.5}
+                        stroke="currentColor"
+                        className="w-4 h-4"
+                      >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
                       </svg>
                     </div>
