@@ -382,9 +382,12 @@ function EditForm({ post, onCancel, onSuccess }) {
 
 // ────────────────────────────────────────────────
 // 카테고리별 게시글 목록
+// Handle-only Drag & Drop 개선 버전
 // ────────────────────────────────────────────────
+
 function BoardSection({ apiCategory, refreshKey }) {
   const { user } = useAuth();
+
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -393,18 +396,33 @@ function BoardSection({ apiCategory, refreshKey }) {
   const isCommunity = apiCategory === '일반';
 
   const DRAG_AND_PIN_ROLES = ['관리자', '반장', '부반장', '선생님'];
-  const isAuthorized = user && DRAG_AND_PIN_ROLES.includes(user.role);
-  const isDraggableCategory = apiCategory === '수행' || apiCategory === '공지';
-  const isDragEnabled = isAuthorized && isDraggableCategory;
 
+  const isAuthorized =
+    user && DRAG_AND_PIN_ROLES.includes(user.role);
+
+  const isDraggableCategory =
+    apiCategory === '수행' || apiCategory === '공지';
+
+  const isDragEnabled =
+    isAuthorized && isDraggableCategory;
+
+  // drag states
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+
+  // ────────────────────────────────────────────────
+  // 게시글 불러오기
+  // ────────────────────────────────────────────────
 
   const fetchPosts = async () => {
     setLoading(true);
     setError('');
+
     try {
-      const { data } = await api.get('/boards', { params: { category: apiCategory } });
+      const { data } = await api.get('/boards', {
+        params: { category: apiCategory },
+      });
+
       setPosts(data);
     } catch {
       setError('게시글을 불러오는데 실패했습니다.');
@@ -417,8 +435,26 @@ function BoardSection({ apiCategory, refreshKey }) {
     fetchPosts();
   }, [apiCategory, refreshKey]);
 
+  // ────────────────────────────────────────────────
+  // 권한
+  // ────────────────────────────────────────────────
+
+  const canModify = (post) => {
+    if (!user) return false;
+
+    return (
+      post.authorId === user.id ||
+      PRIVILEGED_ROLES.includes(user.role)
+    );
+  };
+
+  // ────────────────────────────────────────────────
+  // 삭제
+  // ────────────────────────────────────────────────
+
   const handleDelete = async (id) => {
     if (!confirm('정말 삭제하시겠습니까?')) return;
+
     try {
       await api.delete(`/boards/${id}`);
       fetchPosts();
@@ -427,207 +463,443 @@ function BoardSection({ apiCategory, refreshKey }) {
     }
   };
 
-  const canModify = (post) => {
-    if (!user) return false;
-    return post.authorId === user.id || PRIVILEGED_ROLES.includes(user.role);
-  };
-
-  const handleDragStart = (e, index) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e, index) => {
-    e.preventDefault();
-    if (draggedIndex === null) return;
-    const draggedPost = posts[draggedIndex];
-    const targetPost = posts[index];
-    if (!draggedPost || !targetPost) return;
-
-    // Only allow drag over if both are pinned or both are unpinned
-    if (draggedPost.isPinned === targetPost.isPinned) {
-      setDragOverIndex(index);
-    }
-  };
-
-  const handleDrop = async (e, index) => {
-    e.preventDefault();
-    if (draggedIndex === null) return;
-    const draggedPost = posts[draggedIndex];
-    const targetPost = posts[index];
-
-    if (!draggedPost || !targetPost || draggedPost.isPinned !== targetPost.isPinned) {
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-      return;
-    }
-
-    const newPosts = [...posts];
-    const [removed] = newPosts.splice(draggedIndex, 1);
-    newPosts.splice(index, 0, removed);
-
-    setPosts(newPosts);
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-
-    try {
-      const ids = newPosts.map(p => p.id);
-      await api.put('/boards/reorder', { ids });
-    } catch (err) {
-      console.error(err);
-      alert('순서 변경에 실패했습니다.');
-      fetchPosts();
-    }
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
+  // ────────────────────────────────────────────────
+  // 고정
+  // ────────────────────────────────────────────────
 
   const handleTogglePin = async (post) => {
     try {
       const nextPinned = !post.isPinned;
-      await api.patch(`/boards/${post.id}`, { isPinned: nextPinned });
+
+      await api.patch(`/boards/${post.id}`, {
+        isPinned: nextPinned,
+      });
+
       fetchPosts();
     } catch (err) {
-      alert(err.response?.data?.error || '고정 상태 변경에 실패했습니다.');
+      alert(
+        err.response?.data?.error ||
+        '고정 상태 변경에 실패했습니다.'
+      );
     }
   };
 
-  if (loading) return (
-    <div className="text-center py-10">
-      <span className="loading loading-spinner loading-lg" />
-    </div>
-  );
-  if (error) return <div className="alert alert-error text-sm">{error}</div>;
-  if (posts.length === 0) return (
-    <div className="text-center py-10 text-base-content/40">등록된 글이 없습니다.</div>
-  );
+  // ────────────────────────────────────────────────
+  // Drag 시작
+  // ────────────────────────────────────────────────
+
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+
+    // 브라우저 기본 drag image 제거
+    const img = new Image();
+
+    img.src =
+      'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciLz4=';
+
+    e.dataTransfer.setDragImage(img, 0, 0);
+
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  // ────────────────────────────────────────────────
+  // Drag Over
+  // ────────────────────────────────────────────────
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+
+    if (draggedIndex === null) return;
+
+    const draggedPost = posts[draggedIndex];
+    const targetPost = posts[index];
+
+    if (!draggedPost || !targetPost) return;
+
+    // pinned / unpinned 끼리만 이동 가능
+    if (draggedPost.isPinned !== targetPost.isPinned) return;
+
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  // ────────────────────────────────────────────────
+  // Drop
+  // ────────────────────────────────────────────────
+
+  const handleDrop = async (e, index) => {
+    e.preventDefault();
+
+    if (draggedIndex === null) return;
+
+    const draggedPost = posts[draggedIndex];
+    const targetPost = posts[index];
+
+    if (!draggedPost || !targetPost) {
+      resetDragState();
+      return;
+    }
+
+    if (draggedPost.isPinned !== targetPost.isPinned) {
+      resetDragState();
+      return;
+    }
+
+    const newPosts = [...posts];
+
+    const [removed] = newPosts.splice(draggedIndex, 1);
+
+    newPosts.splice(index, 0, removed);
+
+    setPosts(newPosts);
+
+    resetDragState();
+
+    try {
+      await api.put('/boards/reorder', {
+        ids: newPosts.map((p) => p.id),
+      });
+    } catch (err) {
+      console.error(err);
+
+      alert('순서 변경에 실패했습니다.');
+
+      fetchPosts();
+    }
+  };
+
+  const resetDragState = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  // ────────────────────────────────────────────────
+  // 로딩
+  // ────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="text-center py-10">
+        <span className="loading loading-spinner loading-lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="alert alert-error text-sm">
+        {error}
+      </div>
+    );
+  }
+
+  if (posts.length === 0) {
+    return (
+      <div className="text-center py-10 text-base-content/40">
+        등록된 글이 없습니다.
+      </div>
+    );
+  }
+
+  // ────────────────────────────────────────────────
+  // 렌더
+  // ────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col space-y-3">
+    <div className="flex flex-col gap-3">
       {posts.map((post, index) => {
-        const attachments = Array.isArray(post.files) && post.files.length > 0
-          ? post.files
-          : post.fileUrl
-            ? [{ fileName: post.fileName, filePath: post.fileUrl }]
-            : [];
 
-        const isDragging = draggedIndex === index;
-        const isDragOver = dragOverIndex === index && draggedIndex !== index;
+        const attachments =
+          Array.isArray(post.files) &&
+            post.files.length > 0
+            ? post.files
+            : post.fileUrl
+              ? [
+                {
+                  fileName: post.fileName,
+                  filePath: post.fileUrl,
+                },
+              ]
+              : [];
+
+        const isDragging =
+          draggedIndex === index;
+
+        const isDragOver =
+          dragOverIndex === index &&
+          draggedIndex !== index;
 
         return (
           <div
             key={post.id}
-            onDragOver={(e) => handleDragOver(e, index)}
-            onDrop={(e) => handleDrop(e, index)}
-            onDragEnd={handleDragEnd}
-            className={`collapse collapse-arrow bg-base-100 border transition-all duration-200 ${isDragging ? 'opacity-40 border-dashed border-neutral shadow-inner' : 'border-base-200'
-              } ${isDragOver ? 'border-primary bg-primary/5 scale-[1.01]' : 'hover:shadow-md'
-              }`}
+            onDragOver={(e) =>
+              handleDragOver(e, index)
+            }
+            onDrop={(e) =>
+              handleDrop(e, index)
+            }
+            className={`
+              relative
+              collapse
+              collapse-arrow
+              bg-base-100
+              border
+              transition-all
+              duration-200
+
+              ${isDragging
+                ? 'opacity-40 scale-[0.99]'
+                : 'hover:shadow-md'
+              }
+
+              ${isDragOver
+                ? 'border-primary'
+                : 'border-base-200'
+              }
+            `}
           >
+            {/* Drop Indicator */}
+            {isDragOver && (
+              <div className="absolute top-0 left-0 right-0 h-1 bg-primary rounded-full z-20" />
+            )}
+
             <input type="checkbox" />
-            {/* 닫힌 상태 — 제목만 표시 */}
+
+            {/* ──────────────────────────────────────────────── */}
+            {/* TITLE */}
+            {/* ──────────────────────────────────────────────── */}
+
             <div className="collapse-title pr-10">
               <div className="flex items-center justify-between gap-2">
+
+                {/* LEFT */}
                 <div className="flex items-center gap-2 min-w-0">
+
+                  {/* DRAG HANDLE */}
                   {isDragEnabled && (
-                    <div
-                      className="cursor-grab active:cursor-grabbing text-base-content/30 hover:text-base-content/60 shrink-0 flex items-center justify-center w-5 h-5"
-                      draggable={true}
-                      onDragStart={(e) => handleDragStart(e, index)}
-                      title="드래그하여 순서 변경"
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
+                    <button
+                      type="button"
+                      draggable
+                      onDragStart={(e) =>
+                        handleDragStart(e, index)
+                      }
+                      onDragEnd={resetDragState}
+                      onMouseDown={(e) => {
                         e.stopPropagation();
-                        e.preventDefault();
                       }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      className="
+                        cursor-grab
+                        active:cursor-grabbing
+                        shrink-0
+                        w-6
+                        h-6
+                        rounded-md
+                        flex
+                        items-center
+                        justify-center
+                        text-base-content/40
+                        hover:text-base-content/80
+                        hover:bg-base-200
+                        transition-colors
+                      "
+                      title="드래그하여 순서 변경"
                     >
                       <svg
-                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2.5}
+                        stroke="currentColor"
+                        className="w-4 h-4 pointer-events-none"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3.75 9h16.5m-16.5 6.75h16.5"
+                        />
                       </svg>
-                    </div>
+                    </button>
                   )}
+
+                  {/* PIN */}
                   {post.isPinned && (
                     <div
-                      className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-red-500 text-white font-bold text-xs shrink-0 shadow-sm"
+                      className="
+                        inline-flex
+                        items-center
+                        justify-center
+                        w-5
+                        h-5
+                        rounded-md
+                        bg-red-500
+                        text-white
+                        font-bold
+                        text-xs
+                        shrink-0
+                      "
                       title="고정됨"
                     >
                       !
                     </div>
                   )}
-                  <span className="font-semibold text-sm truncate">{post.title}</span>
+
+                  {/* TITLE */}
+                  <span className="font-semibold text-sm truncate">
+                    {post.title}
+                  </span>
                 </div>
+
+                {/* RIGHT */}
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-base-content/50">{post.authorName ?? post.nickname}</span>
+                  <span className="text-xs text-base-content/50">
+                    {post.authorName ?? post.nickname}
+                  </span>
+
                   <span className="text-xs text-base-content/40">
-                    {new Date(post.createdAt).toLocaleDateString()}
+                    {new Date(
+                      post.createdAt
+                    ).toLocaleDateString()}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* 펼친 상태 — 내용 전체 */}
+            {/* ──────────────────────────────────────────────── */}
+            {/* CONTENT */}
+            {/* ──────────────────────────────────────────────── */}
+
             <div className="collapse-content">
+
               {editingId === post.id ? (
                 <EditForm
                   post={post}
-                  onCancel={() => setEditingId(null)}
-                  onSuccess={() => { setEditingId(null); fetchPosts(); }}
+                  onCancel={() =>
+                    setEditingId(null)
+                  }
+                  onSuccess={() => {
+                    setEditingId(null);
+                    fetchPosts();
+                  }}
                 />
               ) : (
                 <>
-                  <div className="whitespace-pre-wrap text-sm text-base-content/80 markdown"><Markdown>{post.content}</Markdown></div>
+                  {/* 본문 */}
+                  <div className="whitespace-pre-wrap text-sm text-base-content/80 markdown">
+                    <Markdown>
+                      {post.content}
+                    </Markdown>
+                  </div>
 
-                  {/* 마감일 배지 */}
+                  {/* 마감일 */}
                   {post.deadline && (
                     <div className="mt-2 inline-flex items-center gap-1 text-xs bg-neutral text-neutral-content px-2 py-1 rounded w-fit">
                       <span>📅</span>
-                      <span>마감: {new Date(post.deadline).toLocaleDateString()}</span>
-                      {post.dDayAlarm && <span>(D-{post.dDayAlarm} 알림)</span>}
+
+                      <span>
+                        마감:{' '}
+                        {new Date(
+                          post.deadline
+                        ).toLocaleDateString()}
+                      </span>
+
+                      {post.dDayAlarm && (
+                        <span>
+                          (D-{post.dDayAlarm} 알림)
+                        </span>
+                      )}
                     </div>
                   )}
 
-                  {/* 파일 첨부 */}
+                  {/* 첨부파일 */}
                   {attachments.length > 0 && (
                     <div className="mt-2 flex flex-col items-start gap-1">
-                      {attachments.map((attachment, index) => (
-                        <a
-                          key={`${attachment.filePath || attachment.fileName}-${index}`}
-                          href={getAttachmentHref(attachment.filePath)}
-                          download={attachment.fileName || undefined}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-primary underline w-fit"
-                        >
-                          📎 {attachment.fileName || `첨부파일 ${index + 1}`}
-                        </a>
-                      ))}
+                      {attachments.map(
+                        (attachment, index) => (
+                          <a
+                            key={`${attachment.filePath || attachment.fileName}-${index}`}
+                            href={getAttachmentHref(
+                              attachment.filePath
+                            )}
+                            download={
+                              attachment.fileName ||
+                              undefined
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-primary underline w-fit"
+                          >
+                            📎{' '}
+                            {attachment.fileName ||
+                              `첨부파일 ${index + 1}`}
+                          </a>
+                        )
+                      )}
                     </div>
                   )}
 
-                  {/* 수정/삭제/고정 버튼 */}
+                  {/* 버튼 */}
                   <div className="flex gap-2 mt-3">
+
                     {canModify(post) && (
                       <>
-                        <button className="btn btn-outline btn-xs" onClick={(e) => { e.stopPropagation(); setEditingId(post.id); }}>수정</button>
-                        <button className="btn btn-outline btn-error btn-xs" onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}>삭제</button>
+                        <button
+                          className="btn btn-outline btn-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+
+                            setEditingId(post.id);
+                          }}
+                        >
+                          수정
+                        </button>
+
+                        <button
+                          className="btn btn-outline btn-error btn-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+
+                            handleDelete(post.id);
+                          }}
+                        >
+                          삭제
+                        </button>
                       </>
                     )}
+
                     {isDragEnabled && (
                       <button
-                        className={`btn btn-xs ${post.isPinned ? 'btn-warning text-warning-content' : 'btn-outline'}`}
-                        onClick={(e) => { e.stopPropagation(); handleTogglePin(post); }}
+                        className={`
+                          btn
+                          btn-xs
+                          ${post.isPinned
+                            ? 'btn-warning text-warning-content'
+                            : 'btn-outline'
+                          }
+                        `}
+                        onClick={(e) => {
+                          e.stopPropagation();
+
+                          handleTogglePin(post);
+                        }}
                       >
-                        {post.isPinned ? '고정 해제' : '상단 고정'}
+                        {post.isPinned
+                          ? '고정 해제'
+                          : '상단 고정'}
                       </button>
                     )}
                   </div>
 
-                  {/* 커뮤니티 댓글 */}
-                  {isCommunity && <CommentSection boardId={post.id} />}
+                  {/* 댓글 */}
+                  {isCommunity && (
+                    <CommentSection
+                      boardId={post.id}
+                    />
+                  )}
                 </>
               )}
             </div>
@@ -637,6 +909,7 @@ function BoardSection({ apiCategory, refreshKey }) {
     </div>
   );
 }
+
 
 // ────────────────────────────────────────────────
 // 메인 Board 페이지
