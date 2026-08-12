@@ -196,23 +196,32 @@ export default function Timetable() {
           <p className="text-base-content/70 mb-8 text-sm">{setupMessage}</p>
 
           <div className="w-full space-y-4">
-            {Object.keys(subjectOptions).map(block => (
-              <div key={block} className="form-control w-full">
-                <label className="label">
-                  <span className="label-text font-bold text-base">{block}</span>
-                </label>
-                <select
-                  className="select select-bordered w-full"
-                  value={`${selections[block]?.subject || ''}${selections[block]?.teacher || ''}`}
-                  onChange={(e) => setSelections({ ...selections, [block]: subjectOptions[block].find(opt => `${opt.subject}${opt.teacher}` === e.target.value) })}
-                >
-                  <option value="" disabled>과목을 선택하세요</option>
-                  {(subjectOptions[block] || []).map(({ subject: sub, teacher, room }) => (
-                    <option key={`${sub}${teacher}`} value={`${sub}${teacher}`}>{sub} ({teacher} 선생님, {room})</option>
-                  ))}
-                </select>
-              </div>
-            ))}
+            {Object.keys(subjectOptions).map(block => {
+              const possibleOptionsByKey = subjectOptions[block].reduce((acc, { subject, teacher, room }) => {
+                acc[`${subject}${teacher}`] = { subject, teacher, room };
+                return acc;
+              }, {});
+              const v = `${selections[block]?.subject || ''}${selections[block]?.teacher || ''}`;
+
+              return (
+                <div key={block} className="form-control w-full">
+                  <label className="label">
+                    <span className="label-text font-bold text-base">{block}</span>
+                  </label>
+                  {JSON.stringify(selections[block])}
+                  <select
+                    className="select select-bordered w-full"
+                    value={Object.keys(possibleOptionsByKey).includes(v) ? v : ''}
+                    onChange={(e) => setSelections({ ...selections, [block]: subjectOptions[block].find(opt => `${opt.subject}${opt.teacher}` === e.target.value) })}
+                  >
+                    <option value="" disabled>과목을 선택하세요</option>
+                    {Object.entries(possibleOptionsByKey).map(([key, { subject: sub, teacher, room }]) => (
+                      <option key={key} value={key}>{sub} ({teacher} 선생님, {room})</option>
+                    ))}
+                  </select>
+                </div>
+                )
+            })}
           </div>
 
           <button
