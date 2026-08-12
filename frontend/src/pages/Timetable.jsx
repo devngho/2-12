@@ -208,7 +208,7 @@ export default function Timetable() {
                   <label className="label">
                     <span className="label-text font-bold text-base">{block}</span>
                   </label>
-                  {JSON.stringify(selections[block])}
+                  
                   <select
                     className="select select-bordered w-full"
                     value={Object.keys(possibleOptionsByKey).includes(v) ? v : ''}
