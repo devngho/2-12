@@ -1,4 +1,4 @@
-import { useState, useEffect, useEffectEvent, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useRequireAuth } from '../contexts/AuthContext';
 
@@ -9,20 +9,44 @@ export default function Timetable() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
+  const [setupMessage, setSetupMessage] = useState('');
   const [serverSelections, setServerSelections] = useState({});
   const [selections, setSelections] = useState({
     '탐구A': null,
     '탐구B': null,
     '탐구C': null
   });
+  const [isSelectionStale, setIsSelectionStale] = useState(false);
 
   useEffect(() => {
+    if (isSelectionStale) return;
+
     if (timetable.length == 0 || (serverSelections['탐구A'] && serverSelections['탐구B'] && serverSelections['탐구C'])) {
       setShowSetup(false);
     } else {
+      console.log('reloading because selections are missing', serverSelections);
       setShowSetup(true);
+      setSetupMessage('탐구 과목을 설정해 주세요.');
     }
-  }, [serverSelections, timetable]);
+  }, [serverSelections, timetable, isSelectionStale]);
+
+  const oldSubjectOptions = {
+    '탐구A': {
+      '물리학': { teacher: '이선경', room: '207' },
+      '인공지능 기초': { teacher: '최다솜', room: '컴퓨터실2' },
+      '화학': { teacher: '하희연', room: '203' },
+    },
+    '탐구B': {
+      '물리학': { teacher: '이선경', room: '207' },
+      '인공지능 기초': { teacher: '최다솜', room: '컴퓨터실2' },
+      '화학': { teacher: '하희연', room: '203' },
+    },
+    '탐구C': {
+      '물리학': { teacher: '이선경', room: '204' },
+      '생명과학': { teacher: '박완수', room: '205' },
+      '화학': { teacher: '석영광', room: '212' },
+    }
+  }
 
   const fetchTimetable = async () => {
     setLoading(true);
@@ -67,6 +91,21 @@ export default function Timetable() {
         });
 
         if (data?.selections) {
+          // check if selections are stale
+          const isStale = Object.entries(data.selections).some(([name, {subject}]) => {
+            const oldSubject = oldSubjectOptions[name]?.[subject];
+
+            return oldSubject; // if old subject exists, then it's stale
+          });
+
+          if (isStale) {
+            setIsSelectionStale(true);
+            setShowSetup(true);
+            setSetupMessage('1학기 탐구 과목이 선택되어 있습니다. 2학기 탐구 과목을 새로 설정해 주세요.');
+          } else {
+            setIsSelectionStale(false);
+          }
+
           setServerSelections(prev => ({ ...prev, ...data.selections }));
           setSelections(prev => ({ ...prev, ...data.selections }));
         }
@@ -104,21 +143,34 @@ export default function Timetable() {
 
   // const subjectOptions = ['물리학', '화학', '생명과학', '지구과학', '인공지능 기초'];
   const subjectOptions = {
-    '탐구A': {
-      '물리학': { teacher: '이선경', room: '207' },
-      '인공지능 기초': { teacher: '최다솜', room: '컴퓨터실2' },
-      '화학': { teacher: '하희연', room: '203' },
-    },
-    '탐구B': {
-      '물리학': { teacher: '이선경', room: '207' },
-      '인공지능 기초': { teacher: '최다솜', room: '컴퓨터실2' },
-      '화학': { teacher: '하희연', room: '203' },
-    },
-    '탐구C': {
-      '물리학': { teacher: '이선경', room: '204' },
-      '생명과학': { teacher: '박완수', room: '205' },
-      '화학': { teacher: '석영광', room: '212' },
-    }
+    '탐구A': [
+      // '물리학': { teacher: '이선경', room: '207' },
+      // '인공지능 기초': { teacher: '최다솜', room: '컴퓨터실2' },
+      // '화학': { teacher: '하희연', room: '203' },
+      { subject: '데이터 과학', teacher: '최다솜', room: '컴퓨터실2' },
+      { subject: '물질과 에너지', teacher: '하희연', room: '210' },
+      { subject: '물질과 에너지', teacher: '김민하', room: '204' },
+      { subject: '물질과 에너지', teacher: '김수진', room: '205' },
+      { subject: '세포와 물질대사', teacher: '박완수', room: '206' },
+      { subject: '역학과 에너지', teacher: '육근호', room: '211' },
+    ],
+    '탐구B': [
+      // '물리학': { teacher: '이선경', room: '207' },
+      // '인공지능 기초': { teacher: '최다솜', room: '컴퓨터실2' },
+      // '화학': { teacher: '하희연', room: '203' },
+      { subject: '물질과 에너지', teacher: '김수진', room: '203' },
+      { subject: '데이터 과학', teacher: '최다솜', room: '컴퓨터실2' },
+      { subject: '물리학 실험', teacher: '이선경', room: '물리실험실1' },
+      { subject: '세포와 물질대사', teacher: '박완수', room: '208' },
+    ],
+    '탐구C': [
+      // '물리학': { teacher: '이선경', room: '204' },
+      // '생명과학': { teacher: '박완수', room: '205' },
+      // '화학': { teacher: '석영광', room: '212' },
+      { subject: '역학과 에너지', teacher: '육근호', room: '212' },
+      { subject: '물질과 에너지', teacher: '김민하', room: '206' },
+      { subject: '생명과학 실험', teacher: '서해인', room: '생명과학실험실' },
+    ]
   }
 
   if (!isAuthed) {
@@ -134,13 +186,14 @@ export default function Timetable() {
     <div className="flex-grow w-full max-w-5xl mx-auto flex flex-col pt-12 items-center text-center space-y-12">
       <div>
         <h2 className="text-3xl font-bold mb-3">주간 시간표</h2>
-        <p className="opacity-60 text-base">2학년 12반의 1학기 요일별 시간표입니다.</p>
+        <p className="opacity-60 text-base">2학년 12반의 2학기 요일별 시간표입니다.</p>
       </div>
 
       {showSetup ? (
         <div className="w-full max-w-md bg-base-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border-2 border-base-200 dark:border-base-100 rounded-3xl p-8 flex flex-col items-center">
           <h3 className="text-2xl font-bold mb-6">탐구 과목 설정</h3>
-          <p className="text-base-content/70 mb-8 text-sm">개인의 이동수업 시간표를 확인하기 위해<br />각 블록별로 수강하는 과목을 선택해주세요.</p>
+          <p className="text-base-content/70 mb-8 text-sm">개인의 이동수업 시간표를 확인하기 위해 각 블록별로 수강하는 과목을 선택해주세요.</p>
+          <p className="text-base-content/70 mb-8 text-sm">{setupMessage}</p>
 
           <div className="w-full space-y-4">
             {Object.keys(subjectOptions).map(block => (
@@ -150,12 +203,12 @@ export default function Timetable() {
                 </label>
                 <select
                   className="select select-bordered w-full"
-                  value={selections[block]?.subject || ''}
-                  onChange={(e) => setSelections({ ...selections, [block]: { subject: e.target.value, ...(subjectOptions[block]?.[e.target.value] ?? {}) } })}
+                  value={`${selections[block]?.subject || ''}${selections[block]?.teacher || ''}`}
+                  onChange={(e) => setSelections({ ...selections, [block]: subjectOptions[block].find(opt => `${opt.subject}${opt.teacher}` === e.target.value) })}
                 >
-                  <option value="" disabled selected>과목을 선택하세요</option>
-                  {Object.entries(subjectOptions[block] || {}).map(([sub, { teacher, room }]) => (
-                    <option key={sub} value={sub}>{sub} ({teacher} 선생님, {room})</option>
+                  <option value="" disabled>과목을 선택하세요</option>
+                  {(subjectOptions[block] || []).map(({ subject: sub, teacher, room }) => (
+                    <option key={`${sub}${teacher}`} value={`${sub}${teacher}`}>{sub} ({teacher} 선생님, {room})</option>
                   ))}
                 </select>
               </div>

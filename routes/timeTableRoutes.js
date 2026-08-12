@@ -8,9 +8,12 @@ const router = Router();
 const cache = {}
 
 const mappings = { // todo: find more concise way
-    '인공지능 기초': '탐구A',
-    '정치': '탐구B',
-    '물리학': '탐구C'
+    // '인공지능 기초': '탐구A',
+    // '정치': '탐구B',
+    // '물리학': '탐구C'
+    '데이터 과학': '탐구A',
+    '물리학 실험': '탐구B',
+    '역학과 에너지': '탐구C',
 }
 
 /**
