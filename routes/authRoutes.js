@@ -10,6 +10,8 @@ import User from '../models/User.js';
 import verifyToken from '../middleware/auth.js';
 const router = Router();
 
+const DUMMY_PASSWORD_HASH = '$2b$10$xOZqdKeMAfQZ.juHpjUPE.VpfCy6McknLUiS152KWsER3ZqQ50Jme';
+
 // 가입 상태 확인 (프론트에서 탭 숨김 처리용)
 router.get('/registration-status', async (req, res) => {
     try {
@@ -35,7 +37,15 @@ router.get('/registration-status', async (req, res) => {
 router.post('/register', async (req, res) => {
     const { studentId, name, password, role } = req.body;
     try {
-        const existingUser = await User.findOne({ studentId });
+        if (!studentId || !name || !password || !role) {
+            return res.status(400).json({ error: '모든 필드를 입력해주세요.' });
+        }
+
+        if (typeof studentId !== 'string' || typeof name !== 'string' || typeof password !== 'string' || typeof role !== 'string') {
+            return res.status(400).json({ error: '모든 필드는 문자열이어야 합니다.' });
+        }
+
+        const existingUser = await User.findOne({ studentId: { $eq: studentId } });
         if (existingUser) return res.status(400).json({ error: '이미 존재하는 학번입니다.' });
 
         if (role === '관리자' && await User.exists({ role: '관리자' })) {
@@ -62,12 +72,18 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     const { studentId, password } = req.body;
     try {
-        const user = await User.findOne({ studentId });
-        if (!user) return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
-        if (!user.isApproved) return res.status(403).json({ error: '관리자 승인이 필요합니다.' });
+        if (!studentId || !password) return res.status(400).json({ error: '학번과 비밀번호를 모두 입력해주세요.' });
 
-        const isMatch = await compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ error: '비밀번호가 틀렸습니다.' });
+        if (typeof studentId !== 'string' || typeof password !== 'string') {
+            return res.status(400).json({ error: '학번과 비밀번호는 문자열이어야 합니다.' });
+        }
+
+        const user = await User.findOne({ studentId: { $eq: studentId } });
+        const isMatch = await compare(password, user ? user.password : DUMMY_PASSWORD_HASH);
+        if (!user || !isMatch) {
+            return res.status(401).json({ error: '학번 또는 비밀번호가 올바르지 않습니다.' });
+        }
+        if (!user.isApproved) return res.status(403).json({ error: '관리자 승인이 필요합니다.' });
 
         if (!process.env.JWT_SECRET) {
             return res.status(500).json({ error: '서버 인증 설정 오류' });
@@ -102,6 +118,7 @@ router.post('/logout', async (req, res) => {
 
 router.get('/session', verifyToken, /** @param {import('../auth.js').AuthenticatedRequest} req */ async (req, res) => {
     if (!req.user) return res.status(401).json({ error: '인증이 필요합니다.' });
+    
     res.json({ id: req.user.id, name: req.user.name, role: req.user.role });
 });
 
